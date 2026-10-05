@@ -196,6 +196,8 @@ import {
   ThreadCommandSubtitle,
 } from "./ThreadCommandSubtitle";
 import { ThreadRowLeadingStatus, ThreadRowTrailingStatus } from "./ThreadStatusIndicators";
+import { ProviderInstanceIcon } from "./chat/ProviderInstanceIcon";
+import { GroupPathText, usePersonalPalette } from "../personal/palette/usePersonalPalette";
 import { primaryServerKeybindingsAtom, primaryServerProvidersAtom } from "../state/server";
 import {
   applyProviderInstanceSettings,
@@ -1133,6 +1135,12 @@ function OpenCommandPaletteDialog(props: {
   );
 
   const activeThreadId = activeThread?.id;
+  const personalPalette = usePersonalPalette({
+    threads,
+    activeThreadEnvironmentId: activeThread?.environmentId ?? null,
+    activeThreadId: activeThread?.id ?? null,
+    enabled: paletteMode === "root" && newProjectFlow === null && addProjectCloneFlow === null,
+  });
   const currentProjectEnvironmentId =
     activeThread?.environmentId ?? activeDraftThread?.environmentId ?? null;
   const currentProjectId = activeThread?.projectId ?? activeDraftThread?.projectId ?? null;
@@ -1396,14 +1404,34 @@ function OpenCommandPaletteDialog(props: {
   const allThreadItems = useMemo(
     () =>
       buildThreadActionItems({
-        threads,
+        threads: personalPalette.scopedThreads,
         ...(activeThreadId ? { activeThreadId } : {}),
         projectTitleById,
         sortOrder: clientSettings.sidebarThreadSortOrder,
         icon: <MessageSquareIcon className={ITEM_ICON_CLASS} />,
+        // Personal: the provider's mark leads each chat row instead of a generic chat icon.
+        renderIcon: (thread) => {
+          const modelInstanceId =
+            thread.runtime?.providerInstanceId ?? thread.modelSelection.instanceId;
+          const providerEntry = providerEntryByEnvironmentAndInstanceId.get(
+            `${thread.environmentId}:${modelInstanceId}`,
+          );
+          return providerEntry ? (
+            <ProviderInstanceIcon
+              driverKind={providerEntry.driverKind}
+              displayName={thread.runtime?.providerName ?? providerEntry.displayName}
+              acpRegistryAgentId={providerEntry.acpRegistryAgentId}
+              acpRegistryIconUrl={providerEntry.acpRegistryIconUrl}
+              iconClassName="size-4"
+            />
+          ) : null;
+        },
         renderLeadingContent: (thread) => <ThreadRowLeadingStatus thread={thread} />,
         renderTrailingContent: (thread) => <ThreadRowTrailingStatus thread={thread} />,
         renderDescription: (thread, { projectTitle }) => {
+          // Personal: filed chats show their group path instead of project and branch.
+          const groupPath = personalPalette.groupPathOf(thread);
+          if (groupPath.length > 0) return <GroupPathText path={groupPath} />;
           const modelInstanceId =
             thread.runtime?.providerInstanceId ?? thread.modelSelection.instanceId;
           const providerEntry =
@@ -1420,7 +1448,8 @@ function OpenCommandPaletteDialog(props: {
               branch={thread.branch}
               worktreePath={thread.worktreePath}
               isCurrent={thread.id === activeThreadId}
-              driverKind={providerEntry?.driverKind ?? null}
+              // Personal: the provider icon already leads the row.
+              driverKind={null}
               providerDisplayName={
                 thread.runtime?.providerName ?? providerEntry?.displayName ?? modelInstanceId
               }
@@ -1455,6 +1484,8 @@ function OpenCommandPaletteDialog(props: {
       activeThreadId,
       clientSettings.sidebarThreadSortOrder,
       navigate,
+      personalPalette.groupPathOf,
+      personalPalette.scopedThreads,
       projectCwdById,
       projectByKey,
       projectEnvironmentLocationById,
@@ -1462,7 +1493,6 @@ function OpenCommandPaletteDialog(props: {
       providerEntryByEnvironmentAndInstanceId,
       threadContentMatchByKey,
       threadSearch.query,
-      threads,
     ],
   );
   const recentThreadItems = allThreadItems.slice(0, RECENT_THREAD_LIMIT);
@@ -2292,6 +2322,7 @@ function OpenCommandPaletteDialog(props: {
     });
   }
 
+  actionItems.push(...personalPalette.actionItems);
   const rootGroups = buildRootGroups({ actionItems, recentThreadItems });
   const settingsSearchItems: CommandPaletteActionItem[] = searchSettings(
     deferredQuery,
@@ -2329,7 +2360,7 @@ function OpenCommandPaletteDialog(props: {
           ? changeAppearanceItem.groups
           : (currentView?.groups ?? rootGroups);
 
-  const filteredGroups = filterCommandPaletteGroups({
+  const upstreamFilteredGroups = filterCommandPaletteGroups({
     activeGroups,
     query: deferredQuery,
     isInSubmenu: currentView !== null,
@@ -2350,6 +2381,7 @@ function OpenCommandPaletteDialog(props: {
           })
         : allThreadItems,
   });
+  const filteredGroups = personalPalette.arrangeGroups(upstreamFilteredGroups, deferredQuery);
 
   const handleAddProjectForEnvironment = useCallback(
     async (input: {
@@ -2957,6 +2989,9 @@ function OpenCommandPaletteDialog(props: {
   const resultRows = buildCommandPaletteRows(displayedGroups);
   const autoHighlightsFirstRow =
     !isBrowsing && !isRemoteProjectCloneFlow && newProjectFlow === null;
+  // The row Enter runs: the highlight, or the hidden first-row auto-highlight.
+  const enterTargetValue =
+    highlightedItemValue ?? (autoHighlightsFirstRow ? (resultRows.itemValues[0] ?? null) : null);
 
   const inputPlaceholder =
     newProjectFlow !== null
@@ -3060,6 +3095,16 @@ function OpenCommandPaletteDialog(props: {
       if (activeThreadReferenceCopyTarget === null) return;
       setOpen(false);
       void copyActiveThreadReference();
+      return;
+    }
+    if (
+      personalPalette.handleKeyDown(event, {
+        query,
+        highlightedValue: enterTargetValue,
+        clearQuery: () => handleQueryChange(""),
+        execute: executeItem,
+      })
+    ) {
       return;
     }
 
@@ -3407,6 +3452,7 @@ function OpenCommandPaletteDialog(props: {
       aria-label="Command palette"
       autoHighlight={autoHighlightsFirstRow ? "always" : false}
       footerActionLabel={footerActionLabel}
+      extraHints={personalPalette.footerHints(enterTargetValue)}
       footerTrailing={footerTrailing}
       inputAccessory={inputAccessory}
       inputProps={{
@@ -3437,7 +3483,7 @@ function OpenCommandPaletteDialog(props: {
             }
           : isBrowsing
             ? { startAddon: <FolderPlusIcon /> }
-            : {}),
+            : (personalPalette.inputProps ?? {})),
         onKeyDown: handleKeyDown,
       }}
       mode="none"

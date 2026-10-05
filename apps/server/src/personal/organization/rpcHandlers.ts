@@ -33,7 +33,7 @@ export const makePersonalOrganizationRpcHandlers = Effect.gen(function* () {
       readonly mode: Parameters<typeof store.setOrganizerMode>[0];
     }) =>
       observeRpcEffect(M.updateOrganizerSettings, store.setOrganizerMode(input.mode), attributes),
-    [M.listThreadDetails]: (_input: {}) =>
-      observeRpcEffect(M.listThreadDetails, store.listThreadDetails(), attributes),
+    [M.listThreadDetails]: (input: Parameters<typeof store.listThreadDetails>[0]) =>
+      observeRpcEffect(M.listThreadDetails, store.listThreadDetails(input), attributes),
   } as const;
 });

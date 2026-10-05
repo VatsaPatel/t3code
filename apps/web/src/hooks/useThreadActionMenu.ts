@@ -33,6 +33,7 @@ import { newThreadId } from "../lib/utils";
 import { buildThreadRouteParams } from "../threadRoutes";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { usePrimaryEnvironmentId } from "../state/environments";
+import { openMoveThreadDialog } from "../personal/organization/organizationActions";
 import { readLocalApi } from "../localApi";
 import {
   deriveLogicalProjectKeyFromSettings,
@@ -271,6 +272,9 @@ export function useThreadActionMenu(input: {
             }
             return;
           }
+          case "move-to":
+            openMoveThreadDialog([threadRef]);
+            return;
           case "mark-unread":
             markThreadUnread(threadRef);
             return;

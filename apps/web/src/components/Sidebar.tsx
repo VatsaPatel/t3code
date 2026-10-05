@@ -244,6 +244,12 @@ import { ProjectFavicon, type ProjectFaviconProject } from "./ProjectFavicon";
 import { ThreadSearchMatchExcerpt } from "./ThreadSearchMatch";
 import { makeWorkspaceFileDropHandlers } from "./chat/workspaceFileDrop";
 import { ProviderInstanceIcon } from "./chat/ProviderInstanceIcon";
+import { usePersonalThreadMenuAction } from "../personal/organization/organizationActions";
+import {
+  PersonalSidebar,
+  PersonalSidebarServices,
+  usePersonalSidebarView,
+} from "../personal/sidebar/PersonalSidebar";
 import { getTriggerDisplayModelLabel } from "./chat/providerIconUtils";
 import {
   deriveProviderEntriesByEnvironment,
@@ -2408,6 +2414,8 @@ export default function Sidebar() {
     },
   });
   const newThreadContext = useHandleNewThread();
+  const [personalSidebarView] = usePersonalSidebarView();
+  const handlePersonalThreadAction = usePersonalThreadMenuAction();
   const openAddProjectCommandPalette = useCallback(
     () => openCommandPalette({ open: "add-project" }),
     [],
@@ -4675,6 +4683,7 @@ export default function Sidebar() {
             return;
           }
           default:
+            if (clicked.value !== null) handlePersonalThreadAction(clicked.value, threadRef);
             return;
         }
       })();
@@ -4694,6 +4703,7 @@ export default function Sidebar() {
       copyThreadIdToClipboard,
       deleteThread,
       handleMultiSelectContextMenu,
+      handlePersonalThreadAction,
       markThreadUnread,
       openProjectSettings,
       projectScopeKey,
@@ -4827,6 +4837,7 @@ export default function Sidebar() {
   return (
     <>
       <ThreadContextDragGhost />
+      <PersonalSidebarServices />
       <SidebarChromeHeader isElectron={isElectron} />
       <SidebarContent
         className="min-h-full"
@@ -5058,7 +5069,8 @@ export default function Sidebar() {
               </p>
             )
           ) : null}
-          {!isSearchingThreads ? (
+          {!isSearchingThreads ? <PersonalSidebar view={personalSidebarView} /> : null}
+          {!isSearchingThreads && personalSidebarView === "flat" ? (
             <TooltipProvider
               key="sidebar-thread-tooltips-150"
               delay={150}

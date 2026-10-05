@@ -319,6 +319,8 @@ export function buildThreadActionItems<TThread extends BuildThreadActionItemsThr
   projectTitleById: ReadonlyMap<Project["id"], string>;
   sortOrder: SidebarThreadSortOrder;
   icon: ReactNode;
+  /** Optional per-thread icon; falls back to `icon`. */
+  renderIcon?: (thread: TThread) => ReactNode;
   /** Optional content rendered inline before the title text per-thread. */
   renderLeadingContent?: (thread: TThread) => ReactNode;
   /** Optional content rendered inline after the title text per-thread. */
@@ -376,7 +378,7 @@ export function buildThreadActionItems<TThread extends BuildThreadActionItemsThr
           thread.latestUserMessageAt ?? thread.updatedAt ?? thread.createdAt,
         ),
         searchRecency: getThreadSortTimestamp(thread, "updated_at"),
-        icon: input.icon,
+        icon: input.renderIcon?.(thread) ?? input.icon,
       },
       leadingContent ? { titleLeadingContent: leadingContent } : {},
       trailingContent ? { titleTrailingContent: trailingContent } : {},

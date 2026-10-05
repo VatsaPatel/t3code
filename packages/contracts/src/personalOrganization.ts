@@ -175,6 +175,12 @@ export const PersonalThreadDetail = Schema.Struct({
 });
 export type PersonalThreadDetail = typeof PersonalThreadDetail.Type;
 
+export const PersonalThreadDetailsInput = Schema.Struct({
+  /** Limit to these threads (a page's rows); omit for every live thread. */
+  threadIds: Schema.optionalKey(Schema.Array(ThreadId).check(Schema.isMaxLength(500))),
+});
+export type PersonalThreadDetailsInput = typeof PersonalThreadDetailsInput.Type;
+
 export const PersonalThreadDetailsResult = Schema.Struct({
   threads: Schema.Array(PersonalThreadDetail),
 });
@@ -259,7 +265,7 @@ export const PersonalOrganizationRpcs = [
     error: RpcError,
   }),
   Rpc.make(M.listThreadDetails, {
-    payload: Schema.Struct({}),
+    payload: PersonalThreadDetailsInput,
     success: PersonalThreadDetailsResult,
     error: RpcError,
   }),

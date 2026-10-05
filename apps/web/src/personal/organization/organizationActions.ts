@@ -295,3 +295,25 @@ export const useMoveThreadDialogStore = create<MoveDialogState>((set) => ({
 /** Opens the "Move to…" picker for one or more chats. */
 export const openMoveThreadDialog = (threads: ReadonlyArray<ScopedThreadRef>) =>
   useMoveThreadDialogStore.getState().open(threads);
+
+/**
+ * Handles the fork's additions to T3's thread menu ("Fork thread", "Move to…")
+ * for surfaces whose own switch does not know them. Returns false for others.
+ */
+export function usePersonalThreadMenuAction() {
+  const forkThread = useForkThread();
+  return useCallback(
+    (action: string, thread: ScopedThreadRef): boolean => {
+      if (action === "fork") {
+        void forkThread(thread);
+        return true;
+      }
+      if (action === "move-to") {
+        openMoveThreadDialog([thread]);
+        return true;
+      }
+      return false;
+    },
+    [forkThread],
+  );
+}

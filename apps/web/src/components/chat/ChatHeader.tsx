@@ -18,6 +18,7 @@ import {
 } from "react";
 import { isTrailingDoubleClick } from "../Sidebar.logic";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { GroupBreadcrumbItems } from "../../personal/organization/GroupBreadcrumbItems";
 import { toastManager } from "../ui/toast";
 import { useThreadActionMenu } from "~/hooks/useThreadActionMenu";
 import { readLocalApi } from "~/localApi";
@@ -270,6 +271,10 @@ export const ChatHeader = memo(function ChatHeader({
             </WorkspaceBreadcrumbSeparator>
           </>
         ) : null}
+        <GroupBreadcrumbItems
+          environmentId={activeThreadEnvironmentId}
+          threadId={isServerThread ? activeThreadId : null}
+        />
         <WorkspaceBreadcrumbItem current className="min-w-10 flex-1">
           {renamingTitle !== null ? (
             <input

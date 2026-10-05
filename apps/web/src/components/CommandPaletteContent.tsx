@@ -7,6 +7,8 @@ import { Kbd, KbdGroup } from "./ui/kbd";
 type CommandPaletteContentProps = Omit<ComponentProps<typeof Command>, "children"> & {
   readonly children: ReactNode;
   readonly escapeLabel?: ReactNode;
+  /** Extra keyboard hints shown before the Esc hint. */
+  readonly extraHints?: ReactNode;
   readonly footerActionLabel?: ReactNode;
   readonly footerTrailing?: ReactNode;
   readonly inputAccessory?: ReactNode;
@@ -28,6 +30,7 @@ type CommandPaletteContentProps = Omit<ComponentProps<typeof Command>, "children
 export function CommandPaletteContent({
   children,
   escapeLabel = "Close",
+  extraHints,
   footerActionLabel,
   footerTrailing,
   inputAccessory,
@@ -87,6 +90,7 @@ export function CommandPaletteContent({
                 <span>Back</span>
               </KbdGroup>
             ) : null}
+            {extraHints}
             <KbdGroup>
               <Kbd>Esc</Kbd>
               <span>{escapeLabel}</span>

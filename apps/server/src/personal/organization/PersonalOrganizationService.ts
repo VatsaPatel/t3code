@@ -27,6 +27,7 @@ import {
   type PersonalOrganizationStreamEvent,
   type PersonalThreadInput,
   type PersonalThreadMoveInput,
+  type PersonalThreadDetailsInput,
   type PersonalThreadDetailsResult,
   type PersonalThreadPlacement,
   type ProjectId,
@@ -257,10 +258,9 @@ export class PersonalOrganizationService extends Context.Service<
       threadId: ThreadId,
     ) => Effect.Effect<PersonalThreadPlacement | null, PersonalOrganizationError>;
     /** Origin, message count, and last-message snippet per live thread (chat manager). */
-    readonly listThreadDetails: () => Effect.Effect<
-      PersonalThreadDetailsResult,
-      PersonalOrganizationError
-    >;
+    readonly listThreadDetails: (
+      input: PersonalThreadDetailsInput,
+    ) => Effect.Effect<PersonalThreadDetailsResult, PersonalOrganizationError>;
   }
 >()("t3/personal/organization/PersonalOrganizationService") {}
 
@@ -774,7 +774,7 @@ export const make = Effect.gen(function* () {
       }),
     );
 
-  const listThreadDetails = () =>
+  const listThreadDetails = (input: PersonalThreadDetailsInput) =>
     Effect.gen(function* () {
       const external =
         (yield* sql<{ found: number }>`
@@ -807,6 +807,7 @@ export const make = Effect.gen(function* () {
         FROM orchestration_v2_projection_threads t
         ${external ? sql`LEFT JOIN personal_external_sessions e ON e.thread_id = t.thread_id` : sql``}
         WHERE t.deleted_at IS NULL
+          ${input.threadIds === undefined ? sql`` : sql`AND t.thread_id IN ${sql.in(input.threadIds)}`}
       `;
       return {
         threads: rows.map((row) => {

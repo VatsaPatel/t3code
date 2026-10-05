@@ -134,6 +134,7 @@ import {
   NumberFieldInput,
 } from "../ui/number-field";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+import { PersonalOrganizationSettingsRows } from "../../personal/organization/OrganizationSettingsRows";
 import { Switch } from "../ui/switch";
 import { ScopedSwitch } from "./ScopedSwitch";
 import { stackedThreadToast, toastManager } from "../ui/toast";
@@ -2470,6 +2471,7 @@ export function GeneralSettingsPanel() {
             ) : null}
           </>
         ) : null}
+        <PersonalOrganizationSettingsRows />
       </SettingsSection>
 
       <SettingsSection id="behavior" title="Behavior">

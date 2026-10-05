@@ -34,6 +34,7 @@ import { Route as ProjectsProjectKeyRouteImport } from './routes/projects.$proje
 import { Route as ChatPullRequestsRouteImport } from './routes/_chat.pull-requests'
 import { Route as ChatDraftDraftIdRouteImport } from './routes/_chat.draft.$draftId'
 import { Route as ChatEnvironmentIdThreadIdRouteImport } from './routes/_chat.$environmentId.$threadId'
+import { Route as ChatGroupsEnvironmentIdGroupIdRouteImport } from './routes/_chat.groups.$environmentId.$groupId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
@@ -161,6 +162,12 @@ const ChatEnvironmentIdThreadIdRoute =
     path: '/$environmentId/$threadId',
     getParentRoute: () => ChatRoute,
   } as any)
+const ChatGroupsEnvironmentIdGroupIdRoute =
+  ChatGroupsEnvironmentIdGroupIdRouteImport.update({
+    id: '/groups/$environmentId/$groupId',
+    path: '/groups/$environmentId/$groupId',
+    getParentRoute: () => ChatRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ChatIndexRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/settings/storage': typeof SettingsStorageRoute
   '/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/groups/$environmentId/$groupId': typeof ChatGroupsEnvironmentIdGroupIdRoute
 }
 export interface FileRoutesByTo {
   '/connect': typeof ConnectRoute
@@ -213,6 +221,7 @@ export interface FileRoutesByTo {
   '/': typeof ChatIndexRoute
   '/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/groups/$environmentId/$groupId': typeof ChatGroupsEnvironmentIdGroupIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -241,6 +250,7 @@ export interface FileRoutesById {
   '/_chat/': typeof ChatIndexRoute
   '/_chat/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/_chat/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/_chat/groups/$environmentId/$groupId': typeof ChatGroupsEnvironmentIdGroupIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/settings/storage'
     | '/$environmentId/$threadId'
     | '/draft/$draftId'
+    | '/groups/$environmentId/$groupId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/connect'
@@ -295,6 +306,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$environmentId/$threadId'
     | '/draft/$draftId'
+    | '/groups/$environmentId/$groupId'
   id:
     | '__root__'
     | '/_chat'
@@ -322,6 +334,7 @@ export interface FileRouteTypes {
     | '/_chat/'
     | '/_chat/$environmentId/$threadId'
     | '/_chat/draft/$draftId'
+    | '/_chat/groups/$environmentId/$groupId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -511,6 +524,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatEnvironmentIdThreadIdRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/_chat/groups/$environmentId/$groupId': {
+      id: '/_chat/groups/$environmentId/$groupId'
+      path: '/groups/$environmentId/$groupId'
+      fullPath: '/groups/$environmentId/$groupId'
+      preLoaderRoute: typeof ChatGroupsEnvironmentIdGroupIdRouteImport
+      parentRoute: typeof ChatRoute
+    }
   }
 }
 
@@ -519,6 +539,7 @@ interface ChatRouteChildren {
   ChatIndexRoute: typeof ChatIndexRoute
   ChatEnvironmentIdThreadIdRoute: typeof ChatEnvironmentIdThreadIdRoute
   ChatDraftDraftIdRoute: typeof ChatDraftDraftIdRoute
+  ChatGroupsEnvironmentIdGroupIdRoute: typeof ChatGroupsEnvironmentIdGroupIdRoute
 }
 
 const ChatRouteChildren: ChatRouteChildren = {
@@ -526,6 +547,7 @@ const ChatRouteChildren: ChatRouteChildren = {
   ChatIndexRoute: ChatIndexRoute,
   ChatEnvironmentIdThreadIdRoute: ChatEnvironmentIdThreadIdRoute,
   ChatDraftDraftIdRoute: ChatDraftDraftIdRoute,
+  ChatGroupsEnvironmentIdGroupIdRoute: ChatGroupsEnvironmentIdGroupIdRoute,
 }
 
 const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
