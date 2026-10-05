@@ -119,6 +119,7 @@ import * as ThreadLaunchService from "./orchestration-v2/ThreadLaunchService.ts"
 import * as ThreadMessageIntake from "./orchestration-v2/ThreadMessageIntake.ts";
 import * as IdAllocator from "./orchestration-v2/IdAllocator.ts";
 import * as ScheduledTasks from "./scheduledTasks/ScheduledTaskService.ts";
+import * as PersonalThreadFork from "./personal/fork/PersonalThreadFork.ts";
 import {
   archivedShellStreamItemFromThreadShell,
   buildActiveShellSnapshot,
@@ -1216,6 +1217,7 @@ const makeWsRpcLayer = (
       const threadLaunch = yield* ThreadLaunchService.ThreadLaunchService;
       const providerSessionManager = yield* ProviderSessionManager.ProviderSessionManagerV2;
       const scheduledTasks = yield* ScheduledTasks.ScheduledTaskService;
+      const personalThreadFork = yield* PersonalThreadFork.PersonalThreadFork;
       const pullRequests = yield* PullRequestService.PullRequestService;
       const pullRequestSync = yield* PullRequestSyncReactor.PullRequestSyncReactor;
       const deviceService = yield* DeviceService.DeviceService;
@@ -2052,6 +2054,15 @@ const makeWsRpcLayer = (
               "rpc.aggregate": "orchestrationV2",
               "orchestration_v2.thread_id": input.threadId,
             },
+          ),
+        [WS_METHODS.personalThreadFork]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.personalThreadFork,
+            personalThreadFork.fork(input, {
+              createdBy: "user",
+              creationSource: input.creationSource ?? "web",
+            }),
+            { "rpc.aggregate": "personal" },
           ),
         [WS_METHODS.scheduledTasksList]: (_input) =>
           observeRpcEffect(WS_METHODS.scheduledTasksList, scheduledTasks.list(), {

@@ -27,7 +27,11 @@ import {
   readEnvironmentSupportsTitleRegeneration,
   readThreadShell,
   useProjects,
+  waitForThreadShell,
 } from "../state/entities";
+import { newThreadId } from "../lib/utils";
+import { buildThreadRouteParams } from "../threadRoutes";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { usePrimaryEnvironmentId } from "../state/environments";
 import { readLocalApi } from "../localApi";
 import {
@@ -97,6 +101,7 @@ export function useThreadActionMenu(input: {
   const updateThreadMetadata = useAtomCommand(threadEnvironment.updateMetadata, {
     reportFailure: false,
   });
+  const forkThread = useAtomCommand(threadEnvironment.forkThread, { reportFailure: false });
   const handleNewThread = useNewThreadHandler();
   const confirmThreadDelete = useClientSettings((s) => s.confirmThreadDelete);
   const confirmThreadArchive = useClientSettings((s) => s.confirmThreadArchive);
@@ -245,6 +250,27 @@ export function useThreadActionMenu(input: {
               }),
             );
             return;
+          case "fork": {
+            const targetThreadId = newThreadId();
+            const result = await forkThread({
+              environmentId: threadRef.environmentId,
+              input: { sourceThreadId: threadRef.threadId, targetThreadId },
+            });
+            if (result._tag === "Failure") {
+              if (!isAtomCommandInterrupted(result)) {
+                failureToast("Couldn't fork thread", squashAtomCommandFailure(result));
+              }
+              return;
+            }
+            const targetRef = scopeThreadRef(threadRef.environmentId, targetThreadId);
+            if (await waitForThreadShell(targetRef)) {
+              void router.navigate({
+                to: "/$environmentId/$threadId",
+                params: buildThreadRouteParams(targetRef),
+              });
+            }
+            return;
+          }
           case "mark-unread":
             markThreadUnread(threadRef);
             return;

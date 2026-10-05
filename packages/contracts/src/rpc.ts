@@ -334,6 +334,11 @@ import {
   SourceControlRepositoryLookupInput,
 } from "./sourceControl.ts";
 import { VcsError } from "./vcs.ts";
+import {
+  PersonalThreadForkError,
+  PersonalThreadForkInput,
+  PersonalThreadForkResult,
+} from "./personalFork.ts";
 import { Project, ProjectMutation, ProjectMutationError } from "./project.ts";
 
 export const WS_METHODS = {
@@ -533,6 +538,9 @@ export const WS_METHODS = {
   subscribeAuthAccess: "subscribeAuthAccess",
   subscribeBackgroundPolicy: "subscribeBackgroundPolicy",
   subscribeResourceTelemetry: "subscribeResourceTelemetry",
+
+  // Personal workspace methods
+  personalThreadFork: "personal.thread.fork",
 } as const;
 
 const WsServerUpsertKeybindingRpc = Rpc.make(WS_METHODS.serverUpsertKeybinding, {
@@ -1699,6 +1707,12 @@ export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthori
   { error: EnvironmentAuthorizationError },
 ) {}
 
+const WsPersonalThreadForkRpc = Rpc.make(WS_METHODS.personalThreadFork, {
+  payload: PersonalThreadForkInput,
+  success: PersonalThreadForkResult,
+  error: Schema.Union([PersonalThreadForkError, EnvironmentAuthorizationError]),
+});
+
 export const WsRpcGroup = RpcGroup.make(
   WsServerProbeRpc,
   WsServerGetConfigRpc,
@@ -1874,4 +1888,5 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeArchivedShellRpc,
   WsOrchestrationV2SubscribeShellRpc,
   WsOrchestrationV2SubscribeThreadRpc,
+  WsPersonalThreadForkRpc,
 ).middleware(RpcScopeAuthorization);

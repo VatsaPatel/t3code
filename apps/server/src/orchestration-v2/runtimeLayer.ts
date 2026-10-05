@@ -51,6 +51,7 @@ import { layer as threadLifecycleServiceLayer } from "./ThreadLifecycleService.t
 import { layer as threadForkServiceLayer } from "./ThreadForkService.ts";
 import { layer as turnItemPositionStoreLayer } from "./TurnItemPositionStore.ts";
 import { layer as scheduledTaskServiceLayer } from "../scheduledTasks/ScheduledTaskService.ts";
+import { layer as personalThreadForkLayer } from "../personal/fork/PersonalThreadFork.ts";
 
 /** The shared application event log and its command receipts. */
 export const OrchestrationEventInfrastructureLayerLive = Layer.mergeAll(
@@ -232,6 +233,20 @@ const agentSessionImporterProvided = agentSessionImporterLayer.pipe(
   ),
 );
 
+// Personal workspace: native forks of threads synced from other clients.
+const personalThreadForkProvided = personalThreadForkLayer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      orchestratorProvided,
+      providerAdapterRegistryProvided,
+      providerSessionManagerProvided,
+      runtimePolicyProvided,
+      idAllocatorLayer,
+      eventSinkProvided,
+    ),
+  ),
+);
+
 const threadManagementProvided = threadManagementServiceLayer.pipe(
   Layer.provide(Layer.merge(orchestratorProvided, legacyV1ThreadImporterProvided)),
 );
@@ -319,6 +334,7 @@ export const OrchestrationV2ProductionLayerLive = Layer.mergeAll(
   ),
   providerContinuationWorkerProvided,
   agentSessionImporterProvided,
+  personalThreadForkProvided,
 ).pipe(
   Layer.provide(Scheduler.layer),
   Layer.provideMerge(OrchestrationEventInfrastructureLayerLive),

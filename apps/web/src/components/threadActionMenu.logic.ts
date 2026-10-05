@@ -22,6 +22,7 @@ export type ThreadActionMenuId =
   | "unsnooze"
   | "rename"
   | "regenerate-title"
+  | "fork"
   | "mark-unread"
   | "copy"
   | "copy-path"
@@ -165,6 +166,7 @@ export function buildThreadActionMenuItems(
           },
         ]
       : []),
+    { id: "fork", label: "Fork thread", icon: "git-branch" },
     { id: "mark-unread", label: "Mark unread", icon: "mail-open" },
     ...(state.projectFilter
       ? [

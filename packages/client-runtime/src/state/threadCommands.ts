@@ -395,6 +395,15 @@ export function createThreadEnvironmentAtoms<R, E>(
         key: ({ environmentId, input }) => JSON.stringify([environmentId, input.threadId]),
       },
     }),
+    forkThread: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:commands:thread:fork-thread",
+      tag: WS_METHODS.personalThreadFork,
+      scheduler,
+      concurrency: {
+        mode: "serial",
+        key: ({ environmentId, input }) => JSON.stringify([environmentId, input.sourceThreadId]),
+      },
+    }),
     uploadFeedback: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:commands:thread:upload-feedback",
       tag: WS_METHODS.providerUploadFeedback,
