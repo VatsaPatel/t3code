@@ -39,7 +39,7 @@ import {
   ProviderInstanceId,
   ThreadId,
   TurnItemId,
-  resolveProviderInstanceEnabled,
+  providerInstanceConfigEnabledFlag,
   type OrchestrationV2AppThread,
   type OrchestrationV2DomainEvent,
   type OrchestrationV2ProviderThread,
@@ -832,7 +832,13 @@ const make = Effect.gen(function* () {
       configured.length === 0
         ? [{ instanceId: DEFAULT_HERMES_INSTANCE, home: hermesHomeFor({}) }]
         : configured
-            .filter(([, instance]) => resolveProviderInstanceEnabled(instance))
+            // Reading history does not need the gateway, so only an explicit
+            // "off" hides an instance; the provider itself defaults to off.
+            .filter(
+              ([, instance]) =>
+                instance.enabled !== false &&
+                providerInstanceConfigEnabledFlag(instance.config) !== false,
+            )
             .map(([instanceId, instance]) => ({
               instanceId: ProviderInstanceId.make(instanceId),
               home: hermesHomeFor(asRecord(instance.config)),
