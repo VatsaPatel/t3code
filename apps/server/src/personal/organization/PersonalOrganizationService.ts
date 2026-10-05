@@ -27,6 +27,7 @@ import {
   type PersonalOrganizationStreamEvent,
   type PersonalThreadInput,
   type PersonalThreadMoveInput,
+  type PersonalThreadDetailsResult,
   type PersonalThreadPlacement,
   type ProjectId,
 } from "@t3tools/contracts";
@@ -255,6 +256,11 @@ export class PersonalOrganizationService extends Context.Service<
     readonly getPlacement: (
       threadId: ThreadId,
     ) => Effect.Effect<PersonalThreadPlacement | null, PersonalOrganizationError>;
+    /** Origin, message count, and last-message snippet per live thread (chat manager). */
+    readonly listThreadDetails: () => Effect.Effect<
+      PersonalThreadDetailsResult,
+      PersonalOrganizationError
+    >;
   }
 >()("t3/personal/organization/PersonalOrganizationService") {}
 
@@ -768,7 +774,60 @@ export const make = Effect.gen(function* () {
       }),
     );
 
+  const listThreadDetails = () =>
+    Effect.gen(function* () {
+      const external =
+        (yield* sql<{ found: number }>`
+        SELECT 1 AS found FROM sqlite_master
+        WHERE type = 'table' AND name = 'personal_external_sessions'
+      `).length > 0;
+      // Correlated lookups ride the (thread_id, created_at) message index.
+      const rows = yield* sql<{
+        thread_id: string;
+        message_count: number;
+        last_message: string | null;
+        origin: string | null;
+        origin_detail: string | null;
+        native_message_count: number | null;
+      }>`
+        SELECT
+          t.thread_id,
+          (SELECT COUNT(*) FROM orchestration_v2_projection_messages m
+            WHERE m.thread_id = t.thread_id) AS message_count,
+          (SELECT substr(json_extract(m.payload_json, '$.text'), 1, 400)
+            FROM orchestration_v2_projection_messages m
+            WHERE m.thread_id = t.thread_id AND m.role IN ('user', 'assistant')
+            ORDER BY m.created_at DESC LIMIT 1) AS last_message,
+          ${
+            external
+              ? sql`e.origin AS origin, e.origin_detail AS origin_detail,
+                  e.native_message_count AS native_message_count`
+              : sql`NULL AS origin, NULL AS origin_detail, NULL AS native_message_count`
+          }
+        FROM orchestration_v2_projection_threads t
+        ${external ? sql`LEFT JOIN personal_external_sessions e ON e.thread_id = t.thread_id` : sql``}
+        WHERE t.deleted_at IS NULL
+      `;
+      return {
+        threads: rows.map((row) => {
+          const text = row.last_message?.replace(/\s+/g, " ").trim() ?? "";
+          return {
+            threadId: ThreadId.make(row.thread_id),
+            origin: row.origin ?? "t3",
+            originDetail: row.origin_detail,
+            messageCount: Math.max(
+              Number(row.message_count),
+              Number(row.native_message_count ?? 0),
+            ),
+            lastMessage:
+              text.length === 0 ? null : text.length > 160 ? `${text.slice(0, 159)}…` : text,
+          };
+        }),
+      };
+    }).pipe(sqlError("Could not list thread details."));
+
   return PersonalOrganizationService.of({
+    listThreadDetails,
     getSnapshot,
     subscribe,
     upsertGroup,

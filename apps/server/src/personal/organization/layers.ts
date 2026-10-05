@@ -32,6 +32,7 @@ export const PERSONAL_ORGANIZATION_RPC_SCOPES = {
   [M.resetThread]: AuthOrchestrationOperateScope,
   [M.runOrganizer]: AuthOrchestrationOperateScope,
   [M.updateOrganizerSettings]: AuthOrchestrationOperateScope,
+  [M.listThreadDetails]: AuthOrchestrationReadScope,
 } as const;
 
 export const classifierLayer = Layer.effect(

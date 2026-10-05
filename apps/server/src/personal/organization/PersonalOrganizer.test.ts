@@ -3,6 +3,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { ProjectId, ThreadId, type PersonalGroup } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 import * as TestClock from "effect/testing/TestClock";
 
@@ -11,6 +12,7 @@ import { validateClassification } from "./classification.ts";
 import { PersonalOrganizationService, layer as storeLayer } from "./PersonalOrganizationService.ts";
 import * as PersonalOrganizer from "./PersonalOrganizer.ts";
 
+const encodeJson = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
 const NOW = "2026-10-05T12:00:00.000Z";
 const CREATED = "2026-10-05T11:00:00.000Z";
 const PROJECT = ProjectId.make("project-personal");
@@ -41,7 +43,7 @@ const insertThread = (thread: {
 }) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
-    const payload = JSON.stringify({
+    const payload = encodeJson({
       providerInstanceId: "codex",
       lineage: {
         parentThreadId: thread.parentThreadId ?? null,

@@ -160,6 +160,26 @@ export const PersonalPlacementResult = Schema.Struct({
   placement: Schema.NullOr(PersonalThreadPlacement),
 });
 
+/**
+ * Per-thread details for the chat manager, fetched on demand (not part of the
+ * live snapshot). Origin comes from synced external sessions; T3-native
+ * threads report origin "t3".
+ */
+export const PersonalThreadDetail = Schema.Struct({
+  threadId: ThreadId,
+  origin: Schema.String,
+  originDetail: Schema.NullOr(Schema.String),
+  messageCount: Schema.Int,
+  /** Last user/assistant message text, whitespace-collapsed and truncated. */
+  lastMessage: Schema.NullOr(Schema.String),
+});
+export type PersonalThreadDetail = typeof PersonalThreadDetail.Type;
+
+export const PersonalThreadDetailsResult = Schema.Struct({
+  threads: Schema.Array(PersonalThreadDetail),
+});
+export type PersonalThreadDetailsResult = typeof PersonalThreadDetailsResult.Type;
+
 export class PersonalOrganizationError extends Schema.TaggedError<PersonalOrganizationError>()(
   "PersonalOrganizationError",
   {
@@ -181,6 +201,7 @@ export const PERSONAL_ORGANIZATION_WS_METHODS = {
   resetThread: "personalOrganization.resetThread",
   runOrganizer: "personalOrganization.runOrganizer",
   updateOrganizerSettings: "personalOrganization.updateOrganizerSettings",
+  listThreadDetails: "personalOrganization.listThreadDetails",
 } as const;
 const M = PERSONAL_ORGANIZATION_WS_METHODS;
 
@@ -235,6 +256,11 @@ export const PersonalOrganizationRpcs = [
   Rpc.make(M.updateOrganizerSettings, {
     payload: PersonalOrganizerSettingsInput,
     success: PersonalOrganizerStatus,
+    error: RpcError,
+  }),
+  Rpc.make(M.listThreadDetails, {
+    payload: Schema.Struct({}),
+    success: PersonalThreadDetailsResult,
     error: RpcError,
   }),
 ] as const;
