@@ -55,15 +55,17 @@ export function useDefaultSelection(environmentId: EnvironmentId) {
     [providers, settings],
   );
   const fallback = useMemo((): ModelSelection | null => {
+    // A disabled or missing Hermes falls through to the user's own default.
+    const usable = instanceEntries.filter((entry) => entry.enabled && entry.isAvailable);
     const hermes =
-      instanceEntries.find((entry) => entry.instanceId === HERMES) ??
-      instanceEntries.find((entry) => entry.driverKind === HERMES);
+      usable.find((entry) => entry.instanceId === HERMES) ??
+      usable.find((entry) => entry.driverKind === HERMES);
     if (hermes) {
       const model = getDefaultProviderInstanceModel(providers, hermes.instanceId);
       if (model) return { instanceId: hermes.instanceId, model };
     }
     if (settings.defaultModelSelection) return settings.defaultModelSelection;
-    const first = instanceEntries[0];
+    const first = usable[0];
     const model = first ? getDefaultProviderInstanceModel(providers, first.instanceId) : undefined;
     return first && model ? { instanceId: first.instanceId, model } : null;
   }, [instanceEntries, providers, settings.defaultModelSelection]);
@@ -122,7 +124,7 @@ export function HomeComposer({ environmentId }: { readonly environmentId: Enviro
     [settings, providers, selection],
   );
   const activeEntry = instanceEntries.find((entry) => entry.instanceId === selection?.instanceId);
-  const placeholder = activeEntry ? `Ask ${activeEntry.displayName}` : "Ask Hermes";
+  const placeholder = activeEntry ? `Ask ${activeEntry.displayName}` : "Start a chat";
 
   const dictationDraft = useMemo(
     (): ComposerDictationDraft => ({
