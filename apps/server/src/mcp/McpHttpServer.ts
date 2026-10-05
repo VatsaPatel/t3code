@@ -58,6 +58,10 @@ import {
   DeviceScreenshotToolkit,
   DeviceStandardToolkit,
 } from "./toolkits/device/tools.ts";
+import {
+  PersonalOrganizationToolkit,
+  PersonalOrganizationToolkitHandlersLive,
+} from "../personal/organization/mcp/toolkit.ts";
 
 const unauthorized = HttpServerResponse.jsonUnsafe(
   {
@@ -708,6 +712,10 @@ export const DeviceToolkitRegistrationLive = Layer.mergeAll(
   DeviceScreenshotRegistrationLive,
 );
 
+const PersonalOrganizationRegistrationLive = McpServer.toolkit(PersonalOrganizationToolkit).pipe(
+  Layer.provide(PersonalOrganizationToolkitHandlersLive),
+);
+
 const McpTransportLive = McpServer.layerHttp({
   name: "T3 Code",
   version: packageJson.version,
@@ -726,4 +734,5 @@ export const layer = Layer.mergeAll(
   WorktreeToolkitRegistrationLive,
   PullRequestsToolkitRegistrationLive,
   DeviceToolkitRegistrationLive,
+  PersonalOrganizationRegistrationLive,
 ).pipe(Layer.provideMerge(McpTransportLive));
