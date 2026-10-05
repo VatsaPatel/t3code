@@ -163,6 +163,14 @@
       "types": "./src/state/itemSupport.ts",
       "default": "./src/state/itemSupport.ts"
     },
+    "./personal/today": {
+      "types": "./src/personal/today.ts",
+      "default": "./src/personal/today.ts"
+    },
+    "./personal/today-atoms": {
+      "types": "./src/personal/todayAtoms.ts",
+      "default": "./src/personal/todayAtoms.ts"
+    },
     "./state/models": {
       "types": "./src/state/models.ts",
       "default": "./src/state/models.ts"

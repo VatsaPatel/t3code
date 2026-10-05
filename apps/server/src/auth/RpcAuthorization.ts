@@ -9,6 +9,7 @@ import {
   AuthTerminalOperateScope,
   ORCHESTRATION_V2_WS_METHODS,
   PERSONAL_VOICE_WS_METHODS,
+  PERSONAL_TODAY_RPC_SCOPES,
   type AuthEnvironmentScope,
   EnvironmentAuthorizationError,
   RpcScopeAuthorization,
@@ -215,6 +216,7 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.subscribeServerLifecycle]: AuthOrchestrationReadScope,
   [WS_METHODS.subscribeAuthAccess]: AuthAccessReadScope,
   [WS_METHODS.subscribeBackgroundPolicy]: AuthOrchestrationReadScope,
+  ...PERSONAL_TODAY_RPC_SCOPES,
 } as const satisfies Readonly<Record<WsRpcMethod, AuthEnvironmentScope>>;
 
 export function requiredScopeForRpcMethod(method: string): AuthEnvironmentScope {

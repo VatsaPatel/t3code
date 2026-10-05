@@ -55,6 +55,7 @@ import { layer as personalThreadForkLayer } from "../personal/fork/PersonalThrea
 import * as PersonalSettings from "../personal/PersonalSettings.ts";
 import * as ExternalSessionStore from "../personal/sync/ExternalSessionStore.ts";
 import * as ExternalSessionSync from "../personal/sync/ExternalSessionSync.ts";
+import * as PersonalToday from "../personal/today/PersonalTodayService.ts";
 
 /** The shared application event log and its command receipts. */
 export const OrchestrationEventInfrastructureLayerLive = Layer.mergeAll(
@@ -350,6 +351,11 @@ export const OrchestrationV2ProductionLayerLive = Layer.mergeAll(
   threadLaunchProvided,
   threadLifecycleProvided,
   scheduledTaskProvided,
+  PersonalToday.liveLayer.pipe(
+    Layer.provide(
+      Layer.mergeAll(threadLaunchProvided, managedProjectFoldersProvided, threadManagementProvided),
+    ),
+  ),
   UsageLimitRecoveryWorker.workerLive.pipe(
     Layer.provide(Layer.mergeAll(projectionStoreLayer, threadManagementProvided)),
   ),

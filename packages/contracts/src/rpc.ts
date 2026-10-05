@@ -324,6 +324,7 @@ import {
   ScheduledTaskUpsertInput,
   ScheduledTaskMutationResult,
 } from "./scheduledTask.ts";
+import { PersonalTodayRpcs } from "./personalToday.ts";
 import {
   PERSONAL_WS_METHODS,
   WsPersonalSettingsGetRpc,
@@ -1804,6 +1805,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsPersonalSyncRunNowRpc,
   WsPersonalSettingsGetRpc,
   WsPersonalSettingsUpdateRpc,
+  ...PersonalTodayRpcs,
   WsServerReportClientActivityRpc,
   WsServerReportHostPowerStateRpc,
   WsServerGetBackgroundPolicyRpc,

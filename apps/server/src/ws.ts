@@ -125,6 +125,8 @@ import * as VoiceTranscription from "./personal/voice/VoiceTranscription.ts";
 import { makePersonalOrganizationRpcHandlers } from "./personal/organization/rpcHandlers.ts";
 import * as PersonalSettings from "./personal/PersonalSettings.ts";
 import * as ExternalSessionSync from "./personal/sync/ExternalSessionSync.ts";
+import * as PersonalToday from "./personal/today/PersonalTodayService.ts";
+import { makePersonalTodayRpcHandlers } from "./personal/today/rpcHandlers.ts";
 import {
   archivedShellStreamItemFromThreadShell,
   buildActiveShellSnapshot,
@@ -1227,6 +1229,7 @@ const makeWsRpcLayer = (
       const personalOrganizationHandlers = yield* makePersonalOrganizationRpcHandlers;
       const personalSettings = yield* PersonalSettings.PersonalSettings;
       const externalSessionSync = yield* ExternalSessionSync.ExternalSessionSync;
+      const personalToday = yield* PersonalToday.PersonalTodayService;
       const pullRequests = yield* PullRequestService.PullRequestService;
       const pullRequestSync = yield* PullRequestSyncReactor.PullRequestSyncReactor;
       const deviceService = yield* DeviceService.DeviceService;
@@ -2127,6 +2130,7 @@ const makeWsRpcLayer = (
           observeRpcEffect(WS_METHODS.personalSettingsUpdate, personalSettings.update(input), {
             "rpc.aggregate": "personal",
           }),
+        ...makePersonalTodayRpcHandlers(personalToday),
         [WS_METHODS.serverProbe]: (_input) =>
           observeRpcEffect(WS_METHODS.serverProbe, Effect.succeed({}), {
             "rpc.aggregate": "server",

@@ -59,6 +59,7 @@ export * from "./scheduledTask.ts";
 export * from "./personalVoice.ts";
 export * from "./personalOrganization.ts";
 export * from "./personalSync.ts";
+export * from "./personalToday.ts";
 export * from "./worktreeMcp.ts";
 export * from "./resourceTelemetry.ts";
 export * from "./rpc.ts";
