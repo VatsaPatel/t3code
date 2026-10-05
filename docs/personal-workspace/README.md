@@ -4,7 +4,7 @@ This fork turns T3 Code into one place to run a personal agent (Hermes) and work
 Claude Code) side by side. T3 is already excellent inside a single chat; what it lacks is **chat
 management**: hundreds of conversations that start in different places, need finding, continuing,
 organizing and following up. This document records what we are building, why, and the rules that
-keep it calm. Mockups live in [`mockups/`](./mockups) and are generated as edits of real T3
+keep it calm. The [design plan](./design-plan.md) records the tokens and reasoning. Mockups live in [`mockups/`](./mockups) and are generated as edits of real T3
 screenshots, so they show the intended look rather than a new design system.
 
 ## What the user should be able to do
@@ -48,7 +48,7 @@ Sidebar
   Pinned
     Hermes            ← most recent Hermes chat, or a new one
     (T3 pinned chats)
-  Workspaces
+  Workspaces          ← chevrons only, no folder or chat icons, no counts
     repo (T3 project)                  e.g. personal-git, pingdotgg/t3code
       workstream                       e.g. Job search, Health & fitness, Routines
         project                        e.g. Applications, Lead radar
@@ -62,32 +62,35 @@ moving a chat never changes its project, working directory, provider or permissi
 
 ## Surfaces
 
-### Home — [dark](./mockups/home-dark.png), [light](./mockups/home-light.png)
+### Home — [mockup](./mockups/home.png)
 
-A centered column: date and greeting; a one-line composer that asks Hermes by default ("Starts a chat
-in Personal · change" picks the group); then, each hidden when empty:
+A left-aligned daybook (see [design plan](./design-plan.md)). One bold heading, the date. A one-line
+composer that asks Hermes by default (a group picker sits in its chip row). Then:
 
-- **Needs you** — chat title, group and age, the agent's actual question, and Reply (opens the chat at
-  its question panel).
-- **Today** — to-dos due today or overdue, merged with today's routine runs by time. Checking a to-do
-  completes it in Todoist (with undo). Hover: Ask Hermes (delegate), reschedule. "+ Add a to-do" uses
-  natural-language dates. "Upcoming" folds the next seven days.
-- One line for the **morning brief** (Read opens it rendered, with Open chat) and one for **running
-  agents** (opens a short list with Stop).
+- **Waiting on you** — each row: chat title, its group in muted text, the agent's actual question on
+  the second line, waiting time in tabular numerals, and Reply (opens the chat at its question panel).
+  Hidden when empty.
+- **The day ledger** — a 56px time gutter. Above a thin primary-blue **now** rule: what happened today
+  (morning brief with Read, routine runs, agent runs that finished with Open). On the rule: a live line
+  when agents are working, with Stop in its popover. Below the rule: open to-dos (Todoist) with their
+  times, Add to-do (natural-language dates), and on hover Ask Hermes (delegate) and reschedule.
+  Checking a to-do completes it in Todoist with undo.
 
 ### Group page — [mockup](./mockups/group.png)
 
-Opened by clicking a workstream or project in the sidebar. Title, "N chats · providers", New chat and
-a menu (rename, new project, delete). A plain list grouped as Needs you, Recent (title, last-message
-snippet, age, origin word such as "Cron" or "Slack" when not T3), Projects, and Older. Hovering a
-row shows Fork and a menu (Move to…, Archive, Mark unread). Shift/⌘-click selects rows and reveals a
-small "N selected · Move · Archive" pill. One quiet footer line appears only when the organizer acted:
-"Hermes filed N chats here today · Review · Undo".
+Opened by clicking a workstream or project name in the sidebar (the chevron only toggles). A muted
+repo crumb, the group name as heading, and quiet "New chat" and "…" (rename, new project, delete)
+actions. One list ordered by priority: waiting on you, working, then most recent; each row has title,
+last-message snippet, age, and an origin word ("Cron", "Slack") when it did not start in T3. Hovering
+a row swaps its age for Fork and a menu (Move to…, Archive, Mark unread). Then "Projects" with chat
+counts, and "Show N older chats". Shift/⌘-click selects rows and shows a small "N selected, Move,
+Archive" bar. When the organizer acted, one footer line: "Hermes filed 3 chats here today." with
+Review and Undo links.
 
 ### Routines — [mockup](./mockups/routines.png)
 
-Hermes cron jobs and T3 scheduled tasks in one list, sorted by next run, with a tiny status (ok,
-failed, missed, paused). Selecting one opens a detail panel: cadence and delivery, Run now and
+Hermes cron jobs and T3 scheduled tasks in one list, sorted by next run, using Home's time gutter,
+with a quiet status word (ok, failed, missed, paused). Selecting one opens a detail panel: cadence and delivery, Run now and
 Pause/Resume, the last run's rendered output, and history with links to each run's chat.
 
 ### Chat view — [mockup](./mockups/chat.png)
