@@ -122,6 +122,7 @@ import * as IdAllocator from "./orchestration-v2/IdAllocator.ts";
 import * as ScheduledTasks from "./scheduledTasks/ScheduledTaskService.ts";
 import * as PersonalThreadFork from "./personal/fork/PersonalThreadFork.ts";
 import * as VoiceTranscription from "./personal/voice/VoiceTranscription.ts";
+import { makePersonalOrganizationRpcHandlers } from "./personal/organization/rpcHandlers.ts";
 import {
   archivedShellStreamItemFromThreadShell,
   buildActiveShellSnapshot,
@@ -1221,6 +1222,7 @@ const makeWsRpcLayer = (
       const scheduledTasks = yield* ScheduledTasks.ScheduledTaskService;
       const personalThreadFork = yield* PersonalThreadFork.PersonalThreadFork;
       const voiceTranscription = yield* VoiceTranscription.VoiceTranscription;
+      const personalOrganizationHandlers = yield* makePersonalOrganizationRpcHandlers;
       const pullRequests = yield* PullRequestService.PullRequestService;
       const pullRequestSync = yield* PullRequestSyncReactor.PullRequestSyncReactor;
       const deviceService = yield* DeviceService.DeviceService;
@@ -1799,6 +1801,7 @@ const makeWsRpcLayer = (
       });
 
       const handlers = ServerWsRpcGroup.of({
+        ...personalOrganizationHandlers,
         [ORCHESTRATION_V2_WS_METHODS.dispatchCommand]: (command) =>
           observeRpcEffect(
             ORCHESTRATION_V2_WS_METHODS.dispatchCommand,

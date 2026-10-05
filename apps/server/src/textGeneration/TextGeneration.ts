@@ -1,6 +1,7 @@
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import type * as Schema from "effect/Schema";
 import type {
   BranchNamingOptions,
   ChatAttachment,
@@ -81,6 +82,14 @@ export interface ThreadTitleGenerationResult {
   needsRefinement?: boolean | undefined;
 }
 
+/** Free-form prompt with a caller-owned output schema (used by the personal organizer). */
+export interface StructuredJsonGenerationInput<S extends Schema.Codec<unknown, unknown>> {
+  cwd: string;
+  prompt: string;
+  outputSchema: S;
+  modelSelection: ModelSelection;
+}
+
 /**
  * TextGeneration - Service tag for commit and change request text generation.
  */
@@ -112,6 +121,11 @@ export class TextGeneration extends Context.Service<
     readonly generateThreadTitle: (
       input: ThreadTitleGenerationInput,
     ) => Effect.Effect<ThreadTitleGenerationResult, TextGenerationError>;
+
+    /** Optional: only drivers that can run an arbitrary structured prompt implement it. */
+    readonly generateStructuredJson?: <S extends Schema.Codec<unknown, unknown>>(
+      input: StructuredJsonGenerationInput<S>,
+    ) => Effect.Effect<S["Type"], TextGenerationError>;
   }
 >()("t3/textGeneration/TextGeneration") {}
 

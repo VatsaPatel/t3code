@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./personal/*": {
+      "types": "./src/personal/*.ts",
+      "default": "./src/personal/*.ts"
+    },
     "./composerThreadItems": {
       "types": "./src/composerThreadItems.ts",
       "default": "./src/composerThreadItems.ts"
