@@ -20,6 +20,7 @@ import {
 } from "../../threadAccess.ts";
 import * as ThreadSearch from "../../../orchestration-v2/ThreadSearch.ts";
 import * as ScheduledTasks from "../../../scheduledTasks/ScheduledTaskService.ts";
+import * as PersonalThreadFork from "../../../personal/fork/PersonalThreadFork.ts";
 import { queuedRunsInDeliveryOrder } from "../../../orchestration-v2/QueuedRunOrder.ts";
 import { ThreadToolkit } from "./tools.ts";
 
@@ -117,9 +118,24 @@ export const ThreadToolkitHandlersLive = ThreadToolkit.toLayer({
     }),
   t3_thread_fork: (input) =>
     Effect.gen(function* () {
-      const { threads, projection } = yield* readWritableThread(input.threadId);
+      const { threads, projection } = yield* readWritableThread(input.threadId, ["runs"]);
       const commandId = yield* newCommandId();
       const targetThreadId = ThreadId.make(`${commandId}:fork`);
+      // Synced threads have no T3 runs; fork them through the provider's native fork.
+      if (input.sourcePoint.type === "latest_stable" && projection.runs.length === 0) {
+        const personalFork = yield* PersonalThreadFork.PersonalThreadFork;
+        yield* personalFork
+          .fork(
+            {
+              sourceThreadId: projection.thread.id,
+              targetThreadId,
+              ...(input.title === undefined ? {} : { title: input.title }),
+            },
+            { createdBy: "agent", creationSource: "mcp" },
+          )
+          .pipe(Effect.mapError(unavailable));
+        return { sequence: 0, targetThreadId };
+      }
       const result = yield* threads
         .dispatch({
           type: "thread.fork",

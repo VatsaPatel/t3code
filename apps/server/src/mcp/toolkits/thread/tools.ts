@@ -25,6 +25,7 @@ import { Tool, Toolkit } from "effect/unstable/ai";
 
 import * as ThreadSearch from "../../../orchestration-v2/ThreadSearch.ts";
 import * as ScheduledTaskService from "../../../scheduledTasks/ScheduledTaskService.ts";
+import * as PersonalThreadFork from "../../../personal/fork/PersonalThreadFork.ts";
 import * as ThreadManagementService from "../../../orchestration-v2/ThreadManagementService.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 
@@ -206,6 +207,7 @@ const ThreadForkTool = Tool.make("t3_thread_fork", {
     title: Schema.optional(TrimmedNonEmptyString),
   }),
   success: transferResult,
+  dependencies: [...commandTool.dependencies, PersonalThreadFork.PersonalThreadFork],
 }).annotate(Tool.Destructive, true);
 const ThreadMergeBackTool = Tool.make("t3_thread_merge_back", {
   ...commandTool,
