@@ -82,8 +82,10 @@ export type PersonalTodayRoutine = typeof PersonalTodayRoutine.Type;
 export const PersonalTodayBrief = Schema.Struct({
   jobId: TrimmedNonEmptyString,
   jobName: Schema.String,
-  /** Output file stamp `YYYY-MM-DD_HH-MM-SS` in the Hermes host's local time. */
+  /** Output file stamp `YYYY-MM-DD_HH-MM-SS` in the Hermes time zone. */
   runStamp: Schema.String,
+  /** The same moment as an ISO instant, for display in the client's time zone. */
+  runAt: Schema.NullOr(Schema.String),
   /** The model response part of the cron output, as markdown. */
   markdown: Schema.String,
   firstLine: Schema.String,
@@ -132,6 +134,7 @@ export const PersonalTodayBriefArrived = Schema.Struct({
   jobId: TrimmedNonEmptyString,
   jobName: Schema.String,
   runStamp: Schema.String,
+  runAt: Schema.NullOr(Schema.String),
   firstLine: Schema.String,
 });
 export type PersonalTodayBriefArrived = typeof PersonalTodayBriefArrived.Type;
@@ -190,7 +193,13 @@ export const PersonalTodayRoutineHistory = Schema.Struct({
   jobId: TrimmedNonEmptyString,
   runs: Schema.Array(PersonalTodayRoutineRun),
   outputStamps: Schema.Array(Schema.String),
-  output: Schema.NullOr(Schema.Struct({ stamp: Schema.String, markdown: Schema.String })),
+  output: Schema.NullOr(
+    Schema.Struct({
+      stamp: Schema.String,
+      runAt: Schema.NullOr(Schema.String),
+      markdown: Schema.String,
+    }),
+  ),
 });
 export type PersonalTodayRoutineHistory = typeof PersonalTodayRoutineHistory.Type;
 
