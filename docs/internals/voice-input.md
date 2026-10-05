@@ -2,8 +2,11 @@
 
 Transcription edits a composer draft. It does not submit an agent turn. Audio is
 temporary client input, and only normal message submission sends the resulting
-text. The current implementation transcribes locally on supported iOS devices;
-environment-backed transcription is not implemented.
+text. Mobile transcribes locally on supported iOS devices. Web and desktop send the
+recording to the environment (`personal.voice.transcribe`), which runs a configurable
+speech-to-text command; see [`createEnvironmentVoiceTranscriber`](../../packages/client-runtime/src/personal/voice.ts)
+and the [server service](../../apps/server/src/personal/voice/VoiceTranscription.ts).
+Cancelling interrupts the RPC, which makes the server kill the engine process.
 
 The [shared controller](../../packages/client-runtime/src/voice-input/controller.ts)
 owns the operation while the client supplies capture and transcription. Preparation

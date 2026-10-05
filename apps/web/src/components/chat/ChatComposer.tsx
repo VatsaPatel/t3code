@@ -199,6 +199,7 @@ import {
 } from "../composerFooterLayout";
 import { measureRestingComposerControls } from "./restingComposerControlsMeasurement";
 import { type ComposerPromptEditorHandle, ComposerPromptEditor } from "../ComposerPromptEditor";
+import { ComposerDictationButton } from "../../personal/ComposerDictationButton";
 import {
   ComposerContextActionsContext,
   composerContextRecordsFromDraft,
@@ -7466,6 +7467,14 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   }
                   className="flex shrink-0 flex-nowrap items-center justify-end gap-2"
                 >
+                  <ComposerDictationButton
+                    environmentId={environmentId}
+                    draft={{
+                      ownerKey: composerDraftTargetKey,
+                      readSnapshot: readComposerSnapshot,
+                      applyReplacement: applyPromptReplacement,
+                    }}
+                  />
                   {showComposerAttachAction ? (
                     <>
                       <input

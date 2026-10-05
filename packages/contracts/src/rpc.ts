@@ -187,6 +187,14 @@ import {
   RelayClientStatusSchema,
 } from "./relayClient.ts";
 import {
+  PERSONAL_VOICE_WS_METHODS,
+  PersonalVoiceStatusInput,
+  PersonalVoiceStatusResult,
+  PersonalVoiceTranscribeError,
+  PersonalVoiceTranscribeInput,
+  PersonalVoiceTranscribeResult,
+} from "./personalVoice.ts";
+import {
   ORCHESTRATION_V2_WS_METHODS,
   OrchestrationGetWorkflowScriptError,
   OrchestrationV2DispatchCommandError,
@@ -1630,6 +1638,18 @@ const WsSubscribeServerLifecycleRpc = Rpc.make(WS_METHODS.subscribeServerLifecyc
   stream: true,
 });
 
+const WsPersonalVoiceStatusRpc = Rpc.make(PERSONAL_VOICE_WS_METHODS.status, {
+  payload: PersonalVoiceStatusInput,
+  success: PersonalVoiceStatusResult,
+  error: EnvironmentAuthorizationError,
+});
+
+const WsPersonalVoiceTranscribeRpc = Rpc.make(PERSONAL_VOICE_WS_METHODS.transcribe, {
+  payload: PersonalVoiceTranscribeInput,
+  success: PersonalVoiceTranscribeResult,
+  error: Schema.Union([PersonalVoiceTranscribeError, EnvironmentAuthorizationError]),
+});
+
 const WsScheduledTasksListRpc = Rpc.make(WS_METHODS.scheduledTasksList, {
   payload: ScheduledTaskListInput,
   success: ScheduledTaskListResult,
@@ -1753,6 +1773,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsScheduledTasksSetEnabledRpc,
   WsScheduledTasksDeleteRpc,
   WsScheduledTasksRunNowRpc,
+  WsPersonalVoiceStatusRpc,
+  WsPersonalVoiceTranscribeRpc,
   WsServerReportClientActivityRpc,
   WsServerReportHostPowerStateRpc,
   WsServerGetBackgroundPolicyRpc,

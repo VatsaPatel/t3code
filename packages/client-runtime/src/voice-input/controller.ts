@@ -1,6 +1,10 @@
 import { replaceTextRange } from "@t3tools/shared/composerTrigger";
 
-import type { PreparedVoiceTranscription, VoiceTranscriber } from "./transcription.ts";
+import {
+  VoiceTranscriptionError,
+  type PreparedVoiceTranscription,
+  type VoiceTranscriber,
+} from "./transcription.ts";
 
 export const VOICE_RECORDING_LIMIT_SECONDS = 5 * 60;
 
@@ -165,6 +169,7 @@ function errorCode(error: unknown): string | null {
 }
 
 function preparationErrorMessage(error: unknown): string {
+  if (error instanceof VoiceTranscriptionError && error.userMessage) return error.userMessage;
   if (error instanceof Error && error.message === "voice-operation-busy") {
     return "Voice transcription is still finishing. Try again shortly.";
   }
@@ -175,6 +180,7 @@ function preparationErrorMessage(error: unknown): string {
 }
 
 function transcriptionErrorMessage(error: unknown): string {
+  if (error instanceof VoiceTranscriptionError && error.userMessage) return error.userMessage;
   if (error instanceof Error && error.message === "voice-operation-busy") {
     return "Voice transcription is still finishing. Try again shortly.";
   }

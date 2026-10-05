@@ -95,6 +95,12 @@ The quoted text and comment count toward the message limit.
 Mobile displays saved quotes and comments, but does not create citations or
 navigate to their sources.
 
+## Copy a response
+
+The copy button on an assistant response writes both formatted text and the Markdown
+source, so pasting into Docs, Slack, or Notion keeps headings, lists, tables, code blocks,
+and links, while a terminal receives Markdown. Shift-click to copy only the Markdown.
+
 ## Recall a sent prompt
 
 Press `ArrowUp` in an empty composer to bring back the last prompt you sent in this thread. Press
@@ -149,6 +155,20 @@ awake; it can sleep normally once recording stops.
 
 Transcription runs on your device. T3 Code deletes the temporary audio after
 transcription or cancellation; only the message text is sent when you submit.
+
+## Dictation on web and desktop
+
+When the connected environment has a speech-to-text engine, a microphone button appears
+beside **Attach files**. Click it to record, then use the check to transcribe or the X to
+discard. The transcript is inserted at the cursor for you to review; it is never sent
+automatically. Recordings can be up to five minutes long. If the draft changes while a
+transcription is running, the transcript is dropped rather than overwriting your edit.
+
+The environment runs the command from `personal-voice-settings.json` in its userdata folder,
+which defaults to the Hermes Azure speech adapter (`~/.hermes/bin/azure-mai-speech`) with
+credentials from `~/.config/hermes/azure-speech.env`. Audio is sent to that environment,
+processed in a private temporary folder, and deleted afterwards. The button stays hidden
+until the command and credentials file exist.
 
 ## Queued messages
 
