@@ -14,23 +14,36 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 export const MessageCopyButton = memo(function MessageCopyButton({
   text,
   extraFlavors,
+  plainOnShiftClick = false,
   size = "xs",
   variant = "outline",
   className,
 }: {
   text: string;
   /** Additional clipboard types written beside `text/plain` when the platform allows it. */
-  extraFlavors?: Readonly<Record<string, string>>;
+  extraFlavors?: Readonly<Record<string, string>> | (() => Readonly<Record<string, string>>);
+  /** When set, Shift-click copies `text/plain` only (the source as written). */
+  plainOnShiftClick?: boolean;
   size?: "xs" | "icon-xs";
   variant?: "outline" | "ghost";
   className?: string;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
+  const plainOnlyRef = useRef(false);
   const { copyToClipboard, isCopied } = useCopyToClipboard<void>({
     onCopy: () => showAnchoredCopySuccessToast(ref),
     onError: (error: Error) => showAnchoredCopyErrorToast(ref, error),
     timeout: ANCHORED_COPY_TOAST_TIMEOUT_MS,
-    ...(extraFlavors ? { extraFlavors } : {}),
+    ...(extraFlavors
+      ? {
+          extraFlavors: () =>
+            plainOnlyRef.current
+              ? undefined
+              : typeof extraFlavors === "function"
+                ? extraFlavors()
+                : extraFlavors,
+        }
+      : {}),
   });
 
   return (
@@ -40,7 +53,10 @@ export const MessageCopyButton = memo(function MessageCopyButton({
           <Button
             aria-label="Copy message"
             disabled={isCopied}
-            onClick={() => copyToClipboard(text)}
+            onClick={(event) => {
+              plainOnlyRef.current = plainOnShiftClick && event.shiftKey;
+              copyToClipboard(text);
+            }}
             ref={ref}
             type="button"
             size={size}
@@ -55,7 +71,7 @@ export const MessageCopyButton = memo(function MessageCopyButton({
         />
       </TooltipTrigger>
       <TooltipPopup>
-        <p>Copy message</p>
+        <p>{plainOnShiftClick ? "Copy message (Shift: Markdown only)" : "Copy message"}</p>
       </TooltipPopup>
     </Tooltip>
   );
