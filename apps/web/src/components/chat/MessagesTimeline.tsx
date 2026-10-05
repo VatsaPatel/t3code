@@ -178,6 +178,7 @@ import {
   timelineContentOverflowsViewport,
 } from "./timelineScrollAnchoring";
 import { MessageCopyButton } from "./MessageCopyButton";
+import { AssistantRichCopyButton } from "../../personal/AssistantRichCopyButton";
 import { PierreEntryIcon } from "./PierreEntryIcon";
 import { inferEntryKindFromPath } from "../../pierre-icons";
 import { AssistantSelectionToolbar } from "./AssistantSelectionToolbar";
@@ -2677,7 +2678,7 @@ function AssistantCopyButton({
     return null;
   }
 
-  return <MessageCopyButton text={assistantCopyState.text ?? ""} variant="ghost" />;
+  return <AssistantRichCopyButton text={assistantCopyState.text ?? ""} />;
 }
 
 function ProposedPlanTimelineRow({

@@ -103,6 +103,10 @@
       "types": "./src/providerSkills.ts",
       "default": "./src/providerSkills.ts"
     },
+    "./personal/voice": {
+      "types": "./src/personal/voice.ts",
+      "default": "./src/personal/voice.ts"
+    },
     "./voice-input": {
       "types": "./src/voice-input/index.ts",
       "default": "./src/voice-input/index.ts"

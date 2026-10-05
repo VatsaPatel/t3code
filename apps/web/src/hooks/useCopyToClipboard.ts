@@ -208,7 +208,10 @@ export function useCopyToClipboard<TContext = void>({
   target?: string;
   onCopy?: (ctx: TContext) => void;
   onError?: (error: Error, ctx: TContext) => void;
-  extraFlavors?: Readonly<Record<string, string>>;
+  /** A function is resolved at copy time, for flavors that are costly to build per render. */
+  extraFlavors?:
+    | Readonly<Record<string, string>>
+    | (() => Readonly<Record<string, string>> | undefined);
 } = {}): { copyToClipboard: (value: string, ctx: TContext) => void; isCopied: boolean } {
   const [isCopied, setIsCopied] = React.useState(false);
   const timeoutIdRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -225,7 +228,12 @@ export function useCopyToClipboard<TContext = void>({
   extraFlavorsRef.current = extraFlavors;
 
   const copyToClipboard = React.useCallback((value: string, ctx: TContext): void => {
-    void writeTextToClipboard(value, targetRef.current, extraFlavorsRef.current).then(
+    const flavors = extraFlavorsRef.current;
+    void writeTextToClipboard(
+      value,
+      targetRef.current,
+      typeof flavors === "function" ? flavors() : flavors,
+    ).then(
       (didCopy) => {
         if (!didCopy) return;
         if (timeoutIdRef.current) {
