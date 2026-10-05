@@ -733,6 +733,27 @@ export const PiAgentIcon: Icon = ({ className, ...props }) => (
   </svg>
 );
 
+// Hand-drawn monoline caduceus (Hermes). The official Hermes Agent artwork is a
+// 116 KB traced raster, too heavy to inline.
+export const HermesIcon: Icon = ({ className, ...props }) => (
+  <svg
+    {...props}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 5v16" />
+    <circle cx="12" cy="4" r="1.25" />
+    <path d="M12 8C7 8 4 6.5 2.5 4c.5 3.5 3.5 6 9.5 6" />
+    <path d="M12 8c5 0 8-1.5 9.5-4-.5 3.5-3.5 6-9.5 6" />
+    <path d="M12 12.5c-3.5 0-3.5 3 0 3s3.5 3 0 3" />
+  </svg>
+);
+
 // Official two-color mark from https://forgejo.org/favicon.svg.
 export const ForgejoIcon: Icon = (props) => (
   <svg viewBox="0 0 212 212" aria-hidden="true" {...props}>
