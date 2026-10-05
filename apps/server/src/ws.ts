@@ -119,6 +119,8 @@ import * as ThreadLaunchService from "./orchestration-v2/ThreadLaunchService.ts"
 import * as ThreadMessageIntake from "./orchestration-v2/ThreadMessageIntake.ts";
 import * as IdAllocator from "./orchestration-v2/IdAllocator.ts";
 import * as ScheduledTasks from "./scheduledTasks/ScheduledTaskService.ts";
+import * as PersonalSettings from "./personal/PersonalSettings.ts";
+import * as ExternalSessionSync from "./personal/sync/ExternalSessionSync.ts";
 import {
   archivedShellStreamItemFromThreadShell,
   buildActiveShellSnapshot,
@@ -1216,6 +1218,8 @@ const makeWsRpcLayer = (
       const threadLaunch = yield* ThreadLaunchService.ThreadLaunchService;
       const providerSessionManager = yield* ProviderSessionManager.ProviderSessionManagerV2;
       const scheduledTasks = yield* ScheduledTasks.ScheduledTaskService;
+      const personalSettings = yield* PersonalSettings.PersonalSettings;
+      const externalSessionSync = yield* ExternalSessionSync.ExternalSessionSync;
       const pullRequests = yield* PullRequestService.PullRequestService;
       const pullRequestSync = yield* PullRequestSyncReactor.PullRequestSyncReactor;
       const deviceService = yield* DeviceService.DeviceService;
@@ -2079,6 +2083,22 @@ const makeWsRpcLayer = (
           observeRpcEffect(WS_METHODS.scheduledTasksRunNow, scheduledTasks.runNow(input), {
             "rpc.aggregate": "scheduledTasks",
             "scheduled_task.id": input.id,
+          }),
+        [WS_METHODS.personalSyncStatus]: (_input) =>
+          observeRpcEffect(WS_METHODS.personalSyncStatus, externalSessionSync.status, {
+            "rpc.aggregate": "personal",
+          }),
+        [WS_METHODS.personalSyncRunNow]: (_input) =>
+          observeRpcEffect(WS_METHODS.personalSyncRunNow, externalSessionSync.runNow, {
+            "rpc.aggregate": "personal",
+          }),
+        [WS_METHODS.personalSettingsGet]: (_input) =>
+          observeRpcEffect(WS_METHODS.personalSettingsGet, personalSettings.get, {
+            "rpc.aggregate": "personal",
+          }),
+        [WS_METHODS.personalSettingsUpdate]: (input) =>
+          observeRpcEffect(WS_METHODS.personalSettingsUpdate, personalSettings.update(input), {
+            "rpc.aggregate": "personal",
           }),
         [WS_METHODS.serverProbe]: (_input) =>
           observeRpcEffect(WS_METHODS.serverProbe, Effect.succeed({}), {
