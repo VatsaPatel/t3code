@@ -168,6 +168,15 @@ export interface AgentSessionThread {
   readonly messages: ReadonlyArray<AgentSessionThreadMessage>;
 }
 
+/** A transcript file found in a configured Claude or Codex home, contents unread. */
+export interface AgentSessionTranscript {
+  readonly source: AgentSessionSource;
+  readonly providerInstanceId: ProviderInstanceId;
+  readonly filePath: string;
+  readonly mtimeMs: number;
+  readonly size: number;
+}
+
 export type AgentSessionRecentThread =
   | {
       readonly _tag: "Importable";
@@ -193,6 +202,15 @@ export class AgentSessionScanner extends Context.Service<
       workspaceRoot: string,
       completedSources?: ReadonlyArray<AgentSessionImportSource>,
     ) => Stream.Stream<AgentSessionRecentThread, AgentSessionScanError>;
+    /** Every transcript in the configured homes, newest first, found by listing and stat only. */
+    readonly listSessionTranscripts: Effect.Effect<
+      ReadonlyArray<AgentSessionTranscript>,
+      AgentSessionScanError
+    >;
+    /** Parse one transcript's visible history and the directory it ran in. */
+    readonly readSessionTranscript: (
+      transcript: AgentSessionTranscript,
+    ) => Effect.Effect<{ readonly thread: AgentSessionThread; readonly cwd: string } | null>;
   }
 >()("t3/project/AgentSessionScanner") {}
 
@@ -613,6 +631,12 @@ function sameTranscriptIdentity(
     left.inode === right.inode &&
     left.birthtimeMs === right.birthtimeMs
   );
+}
+
+const COLLECT_SPAN = "AgentSessionScanner.collectCandidates";
+interface CollectOptions {
+  /** List transcripts without reading them, for callers that track files themselves. */
+  readonly transcriptsOnly?: boolean;
 }
 
 /** @public Service construction is part of the canonical Effect module API. */
@@ -1082,12 +1106,13 @@ export const make = Effect.gen(function* () {
     }));
   });
 
-  const collectCandidates = Effect.fn("AgentSessionScanner.collectCandidates")(function* () {
+  const collectCandidates = Effect.fn(COLLECT_SPAN)(function* (options?: CollectOptions) {
     const settings = yield* serverSettings.getSettings.pipe(
       Effect.mapError((cause) => new AgentSessionScanError({ operation: "read-settings", cause })),
     );
 
     const raw: Array<RawCandidate> = [];
+    const transcripts: Array<AgentSessionTranscript> = [];
     let truncated = false;
 
     for (const source of ["claudeAgent", "codex"] as const) {
@@ -1181,6 +1206,10 @@ export const make = Effect.gen(function* () {
       if (transcriptCandidates.length > MAX_TRANSCRIPTS_PER_SOURCE) {
         truncated = true;
       }
+      if (options?.transcriptsOnly === true) {
+        transcripts.push(...transcriptCandidates.map((transcript) => ({ ...transcript, source })));
+        continue;
+      }
       // Give each account a turn before taking another file from the same home.
       const selectedTranscripts = selectMetadataTranscripts(transcriptCandidates);
       const metadataBudget: MetadataReadBudget = {
@@ -1193,7 +1222,7 @@ export const make = Effect.gen(function* () {
       truncated ||= metadataBudget.truncated;
     }
 
-    return { candidates: raw, truncated };
+    return { candidates: raw, transcripts, truncated };
   });
 
   let cachedCandidates: ReadonlyArray<RawCandidate> | null = null;
@@ -1489,7 +1518,47 @@ export const make = Effect.gen(function* () {
     completedSources = [],
   ) => Stream.unwrap(prepareRecentThreads(workspaceRoot, completedSources));
 
-  return AgentSessionScanner.of({ scan, recentThreads });
+  const listSessionTranscripts: AgentSessionScanner["Service"]["listSessionTranscripts"] =
+    collectCandidates({ transcriptsOnly: true }).pipe(Effect.map((result) => result.transcripts));
+
+  const readSessionTranscript: AgentSessionScanner["Service"]["readSessionTranscript"] = (
+    transcript,
+  ) =>
+    Effect.gen(function* () {
+      const stats = yield* statOption(transcript.filePath);
+      if (Option.isNone(stats) || stats.value.type !== "File") return null;
+      const identity = transcriptIdentity(transcript.filePath, stats.value);
+      const snapshot = yield* readTranscript(
+        transcript.filePath,
+        identity,
+        MAX_IMPORT_RECORDS,
+        transcript.source,
+      );
+      if (snapshot === null) return null;
+      let cwd: string | null = null;
+      for (const record of snapshot.records) {
+        cwd = extractDecodedCwd(record);
+        if (cwd !== null) break;
+      }
+      if (cwd === null) return null;
+      const thread = parseAgentSessionRecords(
+        {
+          source: transcript.source,
+          providerInstanceId: transcript.providerInstanceId,
+          fallbackSessionId: path.basename(transcript.filePath, ".jsonl"),
+          lastActiveAtMs: identity.mtimeMs ?? transcript.mtimeMs,
+        },
+        snapshot.records,
+      );
+      return thread === null ? null : { thread, cwd };
+    }).pipe(importReadLock.withPermits(1));
+
+  return AgentSessionScanner.of({
+    scan,
+    recentThreads,
+    listSessionTranscripts,
+    readSessionTranscript,
+  });
 });
 
 export const layer = Layer.effect(AgentSessionScanner, make);

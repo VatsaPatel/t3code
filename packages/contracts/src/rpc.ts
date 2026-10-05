@@ -325,6 +325,13 @@ import {
   ScheduledTaskMutationResult,
 } from "./scheduledTask.ts";
 import {
+  PERSONAL_WS_METHODS,
+  WsPersonalSettingsGetRpc,
+  WsPersonalSettingsUpdateRpc,
+  WsPersonalSyncRunNowRpc,
+  WsPersonalSyncStatusRpc,
+} from "./personalSync.ts";
+import {
   ProjectCloneActionInput,
   ProjectCloneActionResult,
   ProjectCloneListEvent,
@@ -488,6 +495,9 @@ export const WS_METHODS = {
   scheduledTasksSetEnabled: "scheduledTasks.setEnabled",
   scheduledTasksDelete: "scheduledTasks.delete",
   scheduledTasksRunNow: "scheduledTasks.runNow",
+
+  // Personal fork methods
+  ...PERSONAL_WS_METHODS,
 
   // Cloud environment methods
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
@@ -1790,6 +1800,10 @@ export const WsRpcGroup = RpcGroup.make(
   WsScheduledTasksRunNowRpc,
   WsPersonalVoiceStatusRpc,
   WsPersonalVoiceTranscribeRpc,
+  WsPersonalSyncStatusRpc,
+  WsPersonalSyncRunNowRpc,
+  WsPersonalSettingsGetRpc,
+  WsPersonalSettingsUpdateRpc,
   WsServerReportClientActivityRpc,
   WsServerReportHostPowerStateRpc,
   WsServerGetBackgroundPolicyRpc,

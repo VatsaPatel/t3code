@@ -52,6 +52,9 @@ import { layer as threadForkServiceLayer } from "./ThreadForkService.ts";
 import { layer as turnItemPositionStoreLayer } from "./TurnItemPositionStore.ts";
 import { layer as scheduledTaskServiceLayer } from "../scheduledTasks/ScheduledTaskService.ts";
 import { layer as personalThreadForkLayer } from "../personal/fork/PersonalThreadFork.ts";
+import * as PersonalSettings from "../personal/PersonalSettings.ts";
+import * as ExternalSessionStore from "../personal/sync/ExternalSessionStore.ts";
+import * as ExternalSessionSync from "../personal/sync/ExternalSessionSync.ts";
 
 /** The shared application event log and its command receipts. */
 export const OrchestrationEventInfrastructureLayerLive = Layer.mergeAll(
@@ -311,6 +314,24 @@ const providerRuntimeRecoveryProvided = providerRuntimeRecoveryLayer.pipe(
   ),
 );
 
+// Personal fork: continuous sync of sessions started outside T3 Code.
+const externalSessionSyncProvided = ExternalSessionSync.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ExternalSessionStore.layer,
+      PersonalSettings.layer,
+      AgentSessionScanner.layer,
+      ProjectServiceLayerLive,
+      managedProjectFoldersProvided,
+      eventSinkProvided,
+      projectionStoreLayer,
+      idAllocatorLayer,
+      providerSessionRuntimeLayer,
+    ),
+  ),
+  Layer.provide(ProjectStore.layer),
+);
+
 export const OrchestrationV2LayerLive = Layer.mergeAll(
   orchestratorProvided,
   threadManagementProvided,
@@ -335,6 +356,8 @@ export const OrchestrationV2ProductionLayerLive = Layer.mergeAll(
   providerContinuationWorkerProvided,
   agentSessionImporterProvided,
   personalThreadForkProvided,
+  PersonalSettings.layer,
+  externalSessionSyncProvided,
 ).pipe(
   Layer.provide(Scheduler.layer),
   Layer.provideMerge(OrchestrationEventInfrastructureLayerLive),
