@@ -315,6 +315,7 @@ import {
   ScheduledTaskUpsertInput,
   ScheduledTaskMutationResult,
 } from "./scheduledTask.ts";
+import { PersonalTodayRpcs } from "./personalToday.ts";
 import {
   ProjectCloneActionInput,
   ProjectCloneActionResult,
@@ -1753,6 +1754,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsScheduledTasksSetEnabledRpc,
   WsScheduledTasksDeleteRpc,
   WsScheduledTasksRunNowRpc,
+  ...PersonalTodayRpcs,
   WsServerReportClientActivityRpc,
   WsServerReportHostPowerStateRpc,
   WsServerGetBackgroundPolicyRpc,
