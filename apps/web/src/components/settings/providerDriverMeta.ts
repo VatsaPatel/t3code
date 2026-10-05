@@ -5,6 +5,7 @@ import {
   CodexSettings,
   CursorSettings,
   GrokSettings,
+  HermesSettings,
   OpenCodeSettings,
   PiSettings,
   ProviderDriverKind,
@@ -90,6 +91,11 @@ const PROVIDER_CLIENT_DEFINITIONS: readonly ProviderClientDefinition[] = [
     value: ProviderDriverKind.make("pi"),
     label: "Pi",
     settingsSchema: PiSettings,
+  },
+  {
+    value: ProviderDriverKind.make("hermes"),
+    label: "Hermes",
+    settingsSchema: HermesSettings,
   },
   {
     value: ProviderDriverKind.make("acpRegistry"),

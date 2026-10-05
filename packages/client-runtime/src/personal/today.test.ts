@@ -97,6 +97,15 @@ describe("selectTodayAttention", () => {
     expect(attention.working).toEqual([]);
   });
 
+  it("counts only live runs as working, not threads parked at idle", () => {
+    const attention = selectTodayAttention([
+      shell("running", { latestRunId: RunId.make("running-run"), status: "running" }),
+      // A synced history thread that never ran here reports idle.
+      shell("synced", { latestRunId: RunId.make("synced-run"), status: "idle" }),
+    ]);
+    expect(attention.working.map((item) => item.thread.id)).toEqual(["running"]);
+  });
+
   it("leaves subagent and archived threads out", () => {
     const attention = selectTodayAttention([
       askingQuestion("child", {

@@ -1,4 +1,6 @@
 import type { PersonalTodayRoutine } from "@t3tools/contracts";
+import * as DateTime from "effect/DateTime";
+import * as Option from "effect/Option";
 
 // Pure readers for the Hermes cron store (`<HERMES_HOME>/cron`). The service
 // does the file IO; everything here takes already-read text so it is testable
@@ -220,4 +222,35 @@ export function matchOutputStamp(
     if (distance <= 120 && (best === null || distance < best.distance)) best = { stamp, distance };
   }
   return best?.stamp ?? null;
+}
+
+/** The `timezone:` Hermes writes cron output stamps in, from its config.yaml. */
+export function parseHermesTimeZone(configYaml: string): string | null {
+  const match = /^timezone:\s*["']?([A-Za-z0-9_+\-/]+)["']?\s*(?:#.*)?$/m.exec(configYaml);
+  return match?.[1] ?? null;
+}
+
+/**
+ * An output stamp is wall-clock time in the Hermes time zone, which need not
+ * be the server's or the client's, so clients get the instant instead.
+ */
+export function stampToIso(stamp: string, timeZone: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$/.exec(stamp);
+  if (match === null) return null;
+  const [, year, month, day, hour, minute, second] = match.map(Number) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
+  return DateTime.makeZoned(
+    { year, month, day, hour, minute, second, millisecond: 0 },
+    { timeZone, adjustForTimeZone: true },
+  ).pipe(
+    Option.map(DateTime.formatIso),
+    Option.getOrElse(() => null),
+  );
 }

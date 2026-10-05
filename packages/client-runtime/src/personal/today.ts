@@ -1,9 +1,9 @@
 import type { PersonalTodayTask, ThreadId } from "@t3tools/contracts";
 
+import { backgroundWorkHoldsCompletion } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
 import * as DateTime from "effect/DateTime";
 
 import { threadRuntimeIsActive, type EnvironmentThreadShell } from "../state/models.ts";
-import { isThreadWorking } from "../state/threadInbox.ts";
 import { toSortableTimestamp } from "../state/threadSort.ts";
 
 // Personal fork: what the Today hub shows from thread state the client already
@@ -100,6 +100,19 @@ function newestFirst<T>(items: T[], at: (item: T) => string | null): T[] {
 }
 
 /**
+ * An agent is working while its run is live, or while background work it
+ * started (a subagent, a monitor) will wake it. A runtime parked at idle for
+ * any other reason, such as a synced history thread that never ran here, is at rest.
+ */
+function isAgentWorking(thread: EnvironmentThreadShell): boolean {
+  if (threadRuntimeIsActive(thread.runtime)) return true;
+  return (
+    thread.runtime?.status === "idle" &&
+    backgroundWorkHoldsCompletion(thread.source.pendingBackgroundTasks ?? [])
+  );
+}
+
+/**
  * Splits threads into what needs the user, what agents are working on, and
  * failures that need a person. Visiting or reading a thread never removes it
  * from "needs you": only answering, approving, or acting on the plan does.
@@ -125,7 +138,7 @@ export function selectTodayAttention(
       });
       continue;
     }
-    if (isThreadWorking(thread)) {
+    if (isAgentWorking(thread)) {
       working.push({
         thread,
         startedAt:
@@ -158,7 +171,7 @@ export type DelegationState = "working" | "needs_you" | "review" | "failed" | "m
 export function delegationState(thread: EnvironmentThreadShell | undefined): DelegationState {
   if (thread === undefined || thread.deletedAt !== null) return "missing";
   if (needsYouKind(thread) !== null) return "needs_you";
-  if (isThreadWorking(thread) || threadRuntimeIsActive(thread.runtime)) return "working";
+  if (isAgentWorking(thread)) return "working";
   if (failureNeedsHuman(thread)) return "failed";
   return "review";
 }

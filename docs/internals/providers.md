@@ -36,6 +36,15 @@ Forks use Pi's CLI in the destination directory because RPC session switching re
 session's cwd. Provider switches still use portable handoff summaries.
 See the [adapter](../../apps/server/src/orchestration-v2/Adapters/PiAdapterV2.ts).
 
+Hermes runs one `tui_gateway` process per instance and multiplexes every thread's runtime session
+through it. Hermes gives one surface an exclusive lease on a stored session from its first prompt
+until `session.close`, so Slack and the CLI are refused while T3 holds it. The adapter closes the
+runtime session shortly after each turn settles and resumes it on the next one. Most `config.set`
+keys write the user's `config.yaml`; only model, reasoning, fast, and yolo are session-scoped, and
+the adapter sends nothing else. Forks use Hermes' own whole-session branch, and the conversation
+cannot be rewound. See the [gateway](../../apps/server/src/provider/hermes/HermesGateway.ts) and
+the [adapter](../../apps/server/src/orchestration-v2/Adapters/HermesAdapterV2.ts).
+
 Antigravity separates account profiles per instance while sharing installed executables across the
 environment. It forces file-based credential storage because the native macOS keychain entry would
 otherwise be shared across instances. The launch environment removes ambient Google credentials,

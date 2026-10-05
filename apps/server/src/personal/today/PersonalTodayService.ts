@@ -49,9 +49,11 @@ import {
   firstMeaningfulLine,
   matchOutputStamp,
   parseCronJobs,
+  parseHermesTimeZone,
   planBriefNotifications,
   resolveBriefJobIds,
   sortedOutputStamps,
+  stampToIso,
   toRoutine,
   type BriefOutputObservation,
   type HermesCronJob,
@@ -446,6 +448,15 @@ const make = Effect.gen(function* () {
       .readFileString(path.join(home, "cron", "output", jobId, `${stamp}.md`))
       .pipe(Effect.map(extractCronResponse));
 
+  // Output stamps are in the Hermes time zone; without one configured Hermes
+  // uses this host's.
+  const hermesTimeZone = (home: string) =>
+    fs.readFileString(path.join(home, "config.yaml")).pipe(
+      Effect.map(parseHermesTimeZone),
+      Effect.orElseSucceed(() => null),
+      Effect.map((zone) => zone ?? Intl.DateTimeFormat().resolvedOptions().timeZone),
+    );
+
   const pollCronUnlocked = Effect.gen(function* () {
     yield* Ref.set(lastCronPollAt, yield* Clock.currentTimeMillis);
     const current = yield* Ref.get(store);
@@ -463,6 +474,7 @@ const make = Effect.gen(function* () {
       return [];
     }
     const jobs = jobsResult.success;
+    const timeZone = yield* hermesTimeZone(home);
     const jobsById = new Map(jobs.map((job) => [job.id, job]));
     const briefJobIds = resolveBriefJobIds(jobs, current.settings.briefJobIds);
     const notifyJobIds = current.settings.notifyJobIds ?? briefJobIds;
@@ -485,7 +497,8 @@ const make = Effect.gen(function* () {
       const reusable =
         previousState.brief !== null &&
         previousState.brief.jobId === newestBrief.jobId &&
-        previousState.brief.runStamp === stamp;
+        previousState.brief.runStamp === stamp &&
+        previousState.brief.runAt === stampToIso(stamp, timeZone);
       if (reusable) {
         brief = previousState.brief;
       } else {
@@ -500,6 +513,7 @@ const make = Effect.gen(function* () {
                 jobId: newestBrief.jobId,
                 jobName: job?.name ?? newestBrief.jobId,
                 runStamp: stamp,
+                runAt: stampToIso(stamp, timeZone),
                 markdown,
                 firstLine: firstMeaningfulLine(markdown),
                 deliver: job?.deliver ?? null,
@@ -530,6 +544,7 @@ const make = Effect.gen(function* () {
         jobId: arrival.jobId,
         jobName: jobsById.get(arrival.jobId)?.name ?? arrival.jobId,
         runStamp: arrival.stamp,
+        runAt: stampToIso(arrival.stamp, timeZone),
         firstLine,
       };
       announced.push(event);
@@ -784,7 +799,10 @@ const make = Effect.gen(function* () {
         jobId: input.jobId,
         runs,
         outputStamps: stamps.slice(0, 10),
-        output: stamp === undefined || markdown === null ? null : { stamp, markdown },
+        output:
+          stamp === undefined || markdown === null
+            ? null
+            : { stamp, runAt: stampToIso(stamp, yield* hermesTimeZone(home)), markdown },
       };
     });
 

@@ -175,6 +175,11 @@ function shellRuntime(thread: OrchestrationV2ThreadShell): ThreadRuntimeSummary 
   const parkAtIdle =
     backgroundWorkHoldsCompletion(thread.pendingBackgroundTasks ?? []) &&
     thread.status !== "failed";
+  // A thread whose history came from another client has never run here; it is
+  // at rest, not parked on background work.
+  if (thread.latestRunId === null && thread.activityRunStatus === undefined && !parkAtIdle) {
+    return null;
+  }
   const status = parkAtIdle ? "idle" : (thread.activityRunStatus ?? thread.status);
   return {
     status,

@@ -470,7 +470,7 @@ function ScheduledTaskRow({
   );
 }
 
-function ScheduledTaskEditorDialog({
+export function ScheduledTaskEditorDialog({
   initialEnvironmentId,
   task,
   onClose,

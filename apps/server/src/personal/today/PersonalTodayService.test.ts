@@ -181,6 +181,11 @@ it.effect(
       const outputs = path.join(home, "cron", "output", "brief1");
       yield* fs.makeDirectory(outputs, { recursive: true });
       yield* fs.writeFileString(path.join(home, "cron", "jobs.json"), JOBS_JSON);
+      // Stamps are Hermes wall-clock time, here seven hours behind UTC.
+      yield* fs.writeFileString(
+        path.join(home, "config.yaml"),
+        "model:\n  default: x\ntimezone: America/Los_Angeles\n",
+      );
       const writeBrief = (stamp: string, modifiedAt: string) =>
         Effect.gen(function* () {
           const file = path.join(outputs, `${stamp}.md`);
@@ -216,6 +221,7 @@ it.effect(
           );
           assert.equal(snapshot.cron.routines[1]?.intervalMinutes, 180);
           assert.equal(snapshot.cron.brief?.runStamp, "2026-10-04_08-11-30");
+          assert.equal(snapshot.cron.brief?.runAt, "2026-10-04T15:11:30.000Z");
           assert.equal(
             snapshot.cron.brief?.markdown,
             "## NOW 2026-10-04_08-11-30\n- **Health:** sleep was short.",
@@ -230,6 +236,7 @@ it.effect(
               jobId: "brief1",
               jobName: "Daily life chief-of-staff brief",
               runStamp: "2026-10-05_08-11-30",
+              runAt: "2026-10-05T15:11:30.000Z",
               firstLine: "NOW 2026-10-05_08-11-30",
             },
           ]);
