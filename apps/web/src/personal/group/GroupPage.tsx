@@ -76,6 +76,17 @@ function threadKey(thread: { environmentId: string; id: string }) {
   return `${thread.environmentId}:${thread.id}`;
 }
 
+/** Markdown-free one-line preview of a message. */
+export function plainSnippet(text: string): string {
+  return text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/(\*\*|__|`+|~~)/g, "")
+    .replace(/(^|\s)[#>]+\s/g, "$1")
+    .replace(/(^|\s)[-*]\s+\**/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Last-message snippets and origins for the rows on screen, one request per environment. */
 function useThreadDetails(threads: ReadonlyArray<WorkspaceThread>) {
   const idsByEnvironment = useMemo(() => {
@@ -285,7 +296,7 @@ function GroupPageBody(props: {
 
       {group.children.length > 0 && !reviewing ? (
         <section className="mt-10">
-          <h2 className="font-medium text-base">Projects</h2>
+          <h2 className="px-2 font-medium text-base">Projects</h2>
           <ul className="mt-3 flex flex-col">
             {group.children.map((child) => (
               <li key={child.key}>
@@ -307,25 +318,33 @@ function GroupPageBody(props: {
       ) : null}
 
       {olderCount > 0 ? (
-        <Button variant="link" size="sm" className="mt-6" onClick={() => setShowAll(true)}>
+        <button
+          type="button"
+          className="mt-6 px-2 text-muted-foreground text-sm underline underline-offset-4 hover:text-foreground"
+          onClick={() => setShowAll(true)}
+        >
           {olderCount === 1 ? "Show 1 older chat" : `Show ${olderCount} older chats`}
-        </Button>
+        </button>
       ) : null}
 
       {filedToday.length > 0 ? (
-        <div className="mt-10 flex items-center gap-2 px-2 text-muted-foreground text-sm">
+        <div className="mt-10 flex items-center gap-3 px-2 text-muted-foreground text-sm">
           <SparklesIcon className="size-4 shrink-0" />
           <span>
             {filedToday.length === 1
               ? "Filed 1 chat here today."
               : `Filed ${filedToday.length} chats here today.`}
           </span>
-          <Button variant="link" size="sm" onClick={() => setReviewing((current) => !current)}>
+          <button
+            type="button"
+            className="text-primary hover:underline"
+            onClick={() => setReviewing((current) => !current)}
+          >
             {reviewing ? "Show all" : "Review"}
-          </Button>
-          <Button
-            variant="link"
-            size="sm"
+          </button>
+          <button
+            type="button"
+            className="text-primary hover:underline"
             onClick={async () => {
               for (const thread of filedToday) {
                 await undoMove(scopeThreadRef(thread.environmentId, thread.id));
@@ -334,7 +353,7 @@ function GroupPageBody(props: {
             }}
           >
             Undo
-          </Button>
+          </button>
         </div>
       ) : null}
 
@@ -422,7 +441,9 @@ function GroupThreadRow(props: {
       >
         <div className="truncate font-medium text-sm text-foreground">{thread.shell.title}</div>
         {detail?.lastMessage ? (
-          <div className="truncate text-muted-foreground text-sm">{detail.lastMessage}</div>
+          <div className="truncate text-muted-foreground text-sm">
+            {plainSnippet(detail.lastMessage)}
+          </div>
         ) : null}
       </button>
       <div className="flex h-6 shrink-0 items-center gap-3 text-muted-foreground text-sm tabular-nums group-hover/row:hidden group-focus-within/row:hidden">

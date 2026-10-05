@@ -25,8 +25,11 @@ export function attentionFromSidebarStatus(
     case "input":
       return "needs_you";
     case "working":
-    case "waiting":
       return "working";
+    // "waiting" is a stopped run parked on background work: grey, never a
+    // live working dot (a synced chat is only working when a run is active).
+    case "waiting":
+      return "idle";
     case "failed":
     case "limited":
       return "failed";

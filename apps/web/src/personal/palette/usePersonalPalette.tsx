@@ -330,7 +330,7 @@ export function usePersonalPalette<T extends { environmentId: string; id: string
         ) : null}
         {canStartChat ? (
           <KbdGroup>
-            <Kbd>{isMacPlatform(navigator.platform) ? "⌘ Enter" : "Ctrl Enter"}</Kbd>
+            <Kbd>{isMacPlatform(navigator.platform) ? "⌘↵" : "Ctrl\u00a0↵"}</Kbd>
             <span>New chat here</span>
           </KbdGroup>
         ) : null}

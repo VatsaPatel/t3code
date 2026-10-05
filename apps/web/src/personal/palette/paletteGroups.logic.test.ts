@@ -46,7 +46,24 @@ describe("arrangePersonalPaletteGroups", () => {
     ]);
   });
 
-  it("lists matching groups after upstream actions and targets a sole match", () => {
+  it("drops project and settings results while scoped to a group", () => {
+    const settings: CommandPaletteGroup = {
+      value: "settings-search",
+      label: "Settings",
+      items: [item("setting:resume", "Auto-resume")],
+    };
+    const groups = arrangePersonalPaletteGroups({
+      groups: [settings, chats],
+      query: "resume",
+      groupItems: [],
+      scopeValue: jobSearch.value,
+      newChatItemFor,
+      moveItem: null,
+    });
+    expect(shape(groups).map(([label]) => label)).toEqual(["Chats", "Actions"]);
+  });
+
+  it("lists matching groups ahead of chats when unscoped and targets a sole match", () => {
     const actions: CommandPaletteGroup = {
       value: "actions",
       label: "Actions",

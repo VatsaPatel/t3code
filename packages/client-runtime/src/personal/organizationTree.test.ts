@@ -163,7 +163,7 @@ describe("attentionFromSidebarStatus", () => {
     const plan = { hasActionableProposedPlan: false };
     expect(attentionFromSidebarStatus("approval", plan)).toBe("needs_you");
     expect(attentionFromSidebarStatus("input", plan)).toBe("needs_you");
-    expect(attentionFromSidebarStatus("waiting", plan)).toBe("working");
+    expect(attentionFromSidebarStatus("waiting", plan)).toBe("idle");
     expect(attentionFromSidebarStatus("limited", plan)).toBe("failed");
     expect(attentionFromSidebarStatus("ready", plan)).toBe("idle");
     expect(attentionFromSidebarStatus("ready", { hasActionableProposedPlan: true })).toBe(

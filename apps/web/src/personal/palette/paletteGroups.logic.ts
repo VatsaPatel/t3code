@@ -51,6 +51,13 @@ export function arrangePersonalPaletteGroups(input: {
   const hasQuery = normalizeSearchText(actionsOnly ? input.query.slice(1) : input.query) !== "";
   let groups = input.groups.map(relabel);
   if (actionsOnly) return groups;
+  // A scope narrows the palette to chats in that group: projects and
+  // settings results would only be noise.
+  if (input.scopeValue !== null) {
+    groups = groups.filter(
+      (group) => group.value !== "projects-search" && group.value !== "settings-search",
+    );
+  }
 
   const matchedGroups =
     (hasQuery || input.scopeValue !== null) && input.groupItems.length > 0
@@ -62,8 +69,15 @@ export function arrangePersonalPaletteGroups(input: {
           threadSearchItems: [],
         })
       : [];
+  // Scoped, chats lead and the scope's groups follow them. Unscoped, groups
+  // come first (a short list) so a group stays reachable above many chats.
+  const chatsIndex = groups.findIndex((group) => group.value === "threads-search");
+  const insertAt =
+    input.scopeValue !== null && chatsIndex !== -1
+      ? chatsIndex + 1
+      : groups.findIndex((group) => group.value === "actions") + 1;
+  groups.splice(insertAt, 0, ...matchedGroups);
   const actionsIndex = groups.findIndex((group) => group.value === "actions");
-  groups.splice(actionsIndex + 1, 0, ...matchedGroups);
 
   const matchedItems = matchedGroups[0]?.items ?? [];
   const target =

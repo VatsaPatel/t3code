@@ -1424,7 +1424,9 @@ function OpenCommandPaletteDialog(props: {
               acpRegistryIconUrl={providerEntry.acpRegistryIconUrl}
               iconClassName="size-4"
             />
-          ) : null;
+          ) : (
+            <span aria-hidden="true" className="size-4 shrink-0" />
+          );
         },
         renderLeadingContent: (thread) => <ThreadRowLeadingStatus thread={thread} />,
         renderTrailingContent: (thread) => <ThreadRowTrailingStatus thread={thread} />,

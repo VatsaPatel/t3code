@@ -6,7 +6,7 @@
  */
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import type { OrganizedGroupNode } from "@t3tools/client-runtime/personal/organizationTree";
-import { useParams, useRouter } from "@tanstack/react-router";
+import { useLocation, useParams, useRouter } from "@tanstack/react-router";
 import { ChevronRightIcon } from "lucide-react";
 import * as Schema from "effect/Schema";
 import { memo, useCallback, useMemo, useState, type ReactNode } from "react";
@@ -72,7 +72,7 @@ export function WorkspacesTree(props: { readonly repos: ReadonlyArray<WorkspaceR
           ? projectByKey.get(`${member.environmentId}:${member.projectId}`)
           : undefined;
         return (
-          <li key={repo.key} role="treeitem" aria-expanded={open}>
+          <li key={repo.key} role="treeitem" aria-label={repo.label} aria-expanded={open}>
             <TreeRow
               depth={0}
               expanded={open}
@@ -116,16 +116,24 @@ function GroupBranch(props: {
 }) {
   const { group, depth } = props;
   const openGroupPage = useOpenGroupPage();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const active = group.members.some(
+    (member) => pathname === `/groups/${member.environmentId}/${member.groupId}`,
+  );
   const open = props.isExpanded(group.key, containsThread(group, props.activeKey));
-  const shown = group.threads.slice(0, CHATS_PER_GROUP);
-  const hidden = group.threads.length - shown.length;
+  const head = group.threads.slice(0, CHATS_PER_GROUP);
+  const activeLeaf = group.threads.find((leaf) => leaf.key === props.activeKey);
+  // The open chat stays visible even when it is not among the most recent.
+  const shown = activeLeaf && !head.includes(activeLeaf) ? [...head, activeLeaf] : head;
+  const hidden = group.threads.length - head.length;
   return (
-    <li role="treeitem" aria-expanded={open}>
+    <li role="treeitem" aria-label={group.name} aria-expanded={open}>
       <TreeRow
         depth={depth}
         expanded={open}
         onToggle={() => props.toggle(group.key, open)}
         onActivate={() => openGroupPage(group.members)}
+        active={active}
         label={group.name}
         attention={rollupAttention(group.rollup)}
       />
@@ -164,8 +172,9 @@ function UnsortedChats(props: { readonly repo: WorkspaceRepo; readonly activeKey
   const [limit, setLimit] = useState(UNSORTED_PAGE);
   const leaves = props.repo.threads;
   // Keep the open chat visible even when it is past the limit.
-  const activeIndex = leaves.findIndex((leaf) => leaf.key === props.activeKey);
-  const shown = leaves.slice(0, Math.max(limit, activeIndex + 1));
+  const activeLeaf = leaves.find((leaf) => leaf.key === props.activeKey);
+  const head = leaves.slice(0, limit);
+  const shown = activeLeaf && !head.includes(activeLeaf) ? [...head, activeLeaf] : head;
   return (
     <>
       {shown.map((leaf) => (
@@ -176,9 +185,9 @@ function UnsortedChats(props: { readonly repo: WorkspaceRepo; readonly activeKey
           active={leaf.key === props.activeKey}
         />
       ))}
-      {leaves.length > shown.length ? (
+      {leaves.length > head.length ? (
         <li>
-          <MoreRow depth={1} onClick={() => setLimit(shown.length + UNSORTED_STEP)} />
+          <MoreRow depth={1} onClick={() => setLimit(limit + UNSORTED_STEP)} />
         </li>
       ) : null}
     </>
@@ -197,10 +206,15 @@ function TreeRow(props: {
   readonly leading?: ReactNode;
   readonly attention: ReturnType<typeof rollupAttention>;
   readonly strong?: boolean;
+  readonly active?: boolean;
 }) {
   return (
     <div
-      className={cn(rowClass, "text-sidebar-foreground")}
+      data-active={props.active === true}
+      className={cn(
+        rowClass,
+        "text-sidebar-foreground data-[active=true]:bg-sidebar-row-selected data-[active=true]:font-medium",
+      )}
       style={{ paddingLeft: 4 + props.depth * INDENT_PX }}
     >
       <button
