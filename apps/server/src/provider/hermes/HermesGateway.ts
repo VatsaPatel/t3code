@@ -134,6 +134,11 @@ export function resolveHermesLaunch(
     ? expandHome(path, settings.pythonPath, userHome)
     : path.join(agentRoot, "venv", "bin", "python");
   const env: NodeJS.ProcessEnv = { ...environment };
+  // A server started through `npx t3` inherits npm's `npm_execpath`, which
+  // Hermes' bootstrap prefers over PATH; a too-old npm then fails its update.
+  for (const key of Object.keys(env)) {
+    if (/^npm_/i.test(key)) delete env[key];
+  }
   delete env.PYTHONHOME;
   env.PYTHONPATH = agentRoot;
   env.HERMES_PYTHON_SRC_ROOT = agentRoot;
