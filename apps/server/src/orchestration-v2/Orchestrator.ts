@@ -5415,6 +5415,12 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
               (candidate) => candidate.id === sourceRun.activeAttemptId,
             )?.providerTurnId ??
             undefined);
+      // A fork at the source's newest run is a head fork, which providers that
+      // cannot fork from an earlier turn still support natively.
+      const fromSpecificTurn =
+        sourceRun !== null &&
+        sourceProjection !== null &&
+        sourceProjection.runs.some((run) => run.ordinal > sourceRun.ordinal);
       if (pendingForkTransfer !== undefined) {
         if (sourceRun === null || sourceProviderThread === undefined) {
           return yield* new OrchestratorDispatchError({
@@ -5494,7 +5500,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
                   pendingForkTransfer.sourceProviderInstanceId === modelSelection.instanceId,
                 hasStrongNativeSource: sourceProviderThread?.nativeThreadRef?.strength === "strong",
                 sourceRunStatus: sourceRun.status,
-                fromSpecificTurn: sourceRun !== null,
+                fromSpecificTurn,
               }),
             );
       const canResolveForkNatively = forkExecution === "native_fork";
@@ -5507,7 +5513,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
             threadId: command.threadId,
             providerInstanceId: modelSelection.instanceId,
             capabilities,
-            fromSpecificTurn: sourceRun !== null,
+            fromSpecificTurn,
           }),
         );
       }
