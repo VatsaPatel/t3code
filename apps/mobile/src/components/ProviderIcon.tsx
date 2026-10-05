@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { Path, Svg } from "react-native-svg";
+import { Circle, Path, Svg } from "react-native-svg";
 import { View } from "react-native";
 import { providerInstanceInitials } from "@t3tools/client-runtime/state/provider-instance-display";
 import { useState } from "react";
@@ -129,6 +129,27 @@ export function ProviderIcon(props: ProviderIconProps) {
           d="M165.29 165.29H517.36V400H400V517.36H282.65V634.72H165.29ZM282.65 282.65V400H400V282.65Z"
         />
         <Path fill={foreground} d="M517.36 400H634.72V634.72H517.36Z" />
+      </Svg>
+    );
+  }
+
+  if (props.provider === "hermes") {
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={isDarkMode ? "#F5F5F5" : "#0F0F0F"}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <Path d="M12 5v16" />
+        <Circle cx="12" cy="4" r="1.25" />
+        <Path d="M12 8C7 8 4 6.5 2.5 4c.5 3.5 3.5 6 9.5 6" />
+        <Path d="M12 8c5 0 8-1.5 9.5-4-.5 3.5-3.5 6-9.5 6" />
+        <Path d="M12 12.5c-3.5 0-3.5 3 0 3s3.5 3 0 3" />
       </Svg>
     );
   }
