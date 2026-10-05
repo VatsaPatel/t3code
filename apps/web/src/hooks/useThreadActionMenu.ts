@@ -351,6 +351,7 @@ export function useThreadActionMenu(input: {
     },
     [
       archiveThread,
+      forkThread,
       confirmThreadArchive,
       confirmThreadDelete,
       confirmAndUnpinThread,

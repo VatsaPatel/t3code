@@ -105,6 +105,7 @@ function makeLayer(input: {
           allocate: {
             providerSession: () => Effect.succeed(ProviderSessionId.make("session-for-fork")),
           } as never,
+          derive: {} as never,
         }),
         Layer.mock(EventSink.EventSinkV2)({
           write: ({ events }) => {
