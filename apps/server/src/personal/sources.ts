@@ -131,13 +131,49 @@ const textOfContent = (content: unknown): string => {
   if (!Array.isArray(content)) return "";
   return content
     .map((part: unknown) =>
-      part && typeof part === "object" && "type" in part && part.type === "text" && "text" in part
+      part &&
+      typeof part === "object" &&
+      "type" in part &&
+      (part.type === "text" || part.type === "input_text" || part.type === "output_text") &&
+      "text" in part
         ? String(part.text)
         : "",
     )
     .filter(Boolean)
     .join("\n");
 };
+
+/**
+ * ACP Code Agents (the Slack bridge) drives Claude Code and Codex through their SDKs, so those
+ * sessions look scripted on disk. Its state.db maps each agent session id to a Slack thread.
+ */
+function acpSlackSessions(sinceMs: number): Map<string, { title: string }> {
+  const path = NodePath.join(home(), ".local", "share", "acp-code-agents", "state.db");
+  const out = new Map<string, { title: string }>();
+  if (!NodeFS.existsSync(path)) return out;
+  let db: NodeSqlite.DatabaseSync | undefined;
+  try {
+    db = openReadOnly(path);
+    const rows = db
+      .prepare(
+        `SELECT acp_session_id, title FROM sessions
+         WHERE acp_session_id <> '' AND last_activity >= ? AND status <> 'running'`,
+      )
+      .all(sinceMs / 1000) as Array<{ acp_session_id: string; title: string }>;
+    for (const row of rows) out.set(row.acp_session_id, { title: row.title });
+  } catch {
+    // Optional enrichment: without it, Slack-driven sessions are simply not labeled.
+  } finally {
+    db?.close();
+  }
+  return out;
+}
+
+// Context the harness injects as a user message; not something the person typed.
+const isInjectedUserText = (text: string) =>
+  /^\s*<(environment_context|user_instructions|permissions|turn_aborted|local-command|command-|system-reminder)/.test(
+    text,
+  ) || text.startsWith("# AGENTS.md instructions");
 
 // Codex `exec` runs are scripted and never wait on a person, so only interactive origins count.
 const CODEX_INTERACTIVE_SOURCES = ["cli", "vscode"];
@@ -151,9 +187,8 @@ export function scanCodex(sinceMs: number): ScanResult {
     db = openReadOnly(path);
     const threads = db
       .prepare(
-        `SELECT id, rollout_path, cwd, title, source, updated_at FROM threads
+        `SELECT id, rollout_path, cwd, title, source, originator, updated_at FROM threads
          WHERE archived = 0 AND updated_at >= ? AND source IN (${CODEX_INTERACTIVE_SOURCES.map(() => "?").join(",")})
-           AND originator NOT LIKE 'acp-%'
          ORDER BY updated_at DESC LIMIT 50`,
       )
       .all(sinceMs / 1000, ...CODEX_INTERACTIVE_SOURCES) as Array<{
@@ -162,10 +197,16 @@ export function scanCodex(sinceMs: number): ScanResult {
       cwd: string;
       title: string;
       source: string;
+      originator: string;
       updated_at: number;
     }>;
+    const slack = acpSlackSessions(sinceMs);
     const tails: AgentTail[] = [];
     for (const thread of threads) {
+      const slackSession = slack.get(thread.id);
+      const viaSlack = slackSession !== undefined || thread.originator === "acp-code-agents-slack";
+      // Other ACP-driven threads belong to another program (including T3 itself).
+      if (thread.originator.startsWith("acp-") && !viaSlack) continue;
       if (!NodeFS.existsSync(thread.rollout_path)) continue;
       let lastUser = "";
       let lastAgent: { text: string; at: number } | null = null;
@@ -173,8 +214,17 @@ export function scanCodex(sinceMs: number): ScanResult {
         const record = parse(line);
         const payload = record?.payload as Record<string, unknown> | undefined;
         if (!payload) continue;
-        if (payload.type === "user_message" && typeof payload.message === "string") {
-          lastUser = payload.message;
+        // Older rollouts emit `event_msg/user_message`; newer ones only `response_item/message`.
+        const userText =
+          payload.type === "user_message" && typeof payload.message === "string"
+            ? payload.message
+            : record?.type === "response_item" &&
+                payload.type === "message" &&
+                payload.role === "user"
+              ? textOfContent(payload.content)
+              : "";
+        if (userText && !isInjectedUserText(userText)) {
+          lastUser = userText;
           lastAgent = null;
         } else if (
           payload.type === "task_complete" &&
@@ -189,8 +239,8 @@ export function scanCodex(sinceMs: number): ScanResult {
       tails.push({
         source: "codex",
         sessionId: thread.id,
-        origin: thread.source === "vscode" ? "Codex IDE" : "Codex CLI",
-        title: clip(thread.title || lastUser, 80),
+        origin: viaSlack ? "Slack" : thread.source === "vscode" ? "Codex IDE" : "Codex CLI",
+        title: clip(slackSession?.title || thread.title || lastUser, 80),
         cwd: thread.cwd,
         lastUserText: clip(lastUser, 1500),
         lastAgentText: lastAgent.text,
@@ -229,6 +279,7 @@ export function scanClaude(sinceMs: number): ScanResult {
       }
     }
     files.sort((a, b) => b.mtimeMs - a.mtimeMs);
+    const slack = acpSlackSessions(sinceMs);
     const tails: AgentTail[] = [];
     for (const file of files.slice(0, 80)) {
       let title = "";
@@ -243,11 +294,12 @@ export function scanClaude(sinceMs: number): ScanResult {
           title = record.aiTitle;
         if (record.entrypoint === "cli") interactive = true;
         if (typeof record.cwd === "string") cwd = record.cwd;
-        if (record.isSidechain === true) continue;
+        if (record.isSidechain === true || record.isMeta === true) continue;
         const message = record.message as Record<string, unknown> | undefined;
         if (record.type === "user" && message) {
+          // tool_result blocks have no text parts, so they yield "" and never reset the turn.
           const text = textOfContent(message.content);
-          if (text && !text.startsWith("<")) {
+          if (text && !text.startsWith("<") && !isInjectedUserText(text)) {
             lastUser = text;
             lastAgent = null;
           }
@@ -261,14 +313,15 @@ export function scanClaude(sinceMs: number): ScanResult {
             };
         }
       }
-      // SDK sessions are driven by other programs (including T3 itself), not a person at a terminal.
-      if (!interactive || !lastAgent) continue;
       const sessionId = NodePath.basename(file.path, ".jsonl");
+      const slackSession = slack.get(sessionId);
+      // Other SDK sessions are driven by programs (including T3 itself), not a person.
+      if ((!interactive && !slackSession) || !lastAgent) continue;
       tails.push({
         source: "claude",
         sessionId,
-        origin: "Claude Code",
-        title: clip(title || lastUser || "Claude Code session", 80),
+        origin: slackSession ? "Slack" : "Claude Code",
+        title: clip(slackSession?.title || title || lastUser || "Claude Code session", 80),
         cwd,
         lastUserText: clip(lastUser, 1500),
         lastAgentText: lastAgent.text,
