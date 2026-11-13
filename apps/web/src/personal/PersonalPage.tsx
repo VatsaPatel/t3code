@@ -21,17 +21,24 @@ export function PersonalPage({ children }: { readonly children: ReactNode }) {
 
 export function Section({
   title,
+  count,
   aside,
   children,
 }: {
   readonly title: string;
+  readonly count?: number;
   readonly aside?: ReactNode;
   readonly children: ReactNode;
 }) {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-muted-foreground">{title}</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">
+          {title}
+          {count ? (
+            <span className="ms-1.5 tabular-nums text-muted-foreground/70">{count}</span>
+          ) : null}
+        </h2>
         {aside}
       </div>
       {children}
@@ -45,13 +52,6 @@ export function Muted({ children }: { readonly children: ReactNode }) {
 
 export function relative(iso: string | null): string {
   return iso ? formatRelativeTimeLabel(iso) : "";
-}
-
-export function absolute(iso: string): string {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime())
-    ? ""
-    : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 /** Time until `iso`, e.g. "in 3h"; falls back to the elapsed label for past times. */

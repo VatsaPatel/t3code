@@ -71,6 +71,7 @@ function WaitingSection() {
   return (
     <Section
       title="Waiting on you"
+      count={active.length}
       aside={
         dismissed.length > 0 ? (
           <Button size="compact" variant="ghost-muted" onClick={() => setShowDismissed((v) => !v)}>
@@ -80,7 +81,7 @@ function WaitingSection() {
       }
     >
       {active.length === 0 ? <Muted>Nothing is waiting on you.</Muted> : null}
-      <ul className="flex flex-col gap-4">
+      <ul className="flex flex-col gap-5">
         {active.map((item) => (
           <WaitingRow key={item.key} item={item} onDismiss={setDismissed} />
         ))}
@@ -118,18 +119,25 @@ const WaitingRow = memo(function WaitingRow({
   const { copyToClipboard, isCopied } = useCopyToClipboard();
   const preview =
     item.lastAgentText.length > 160 ? `${item.lastAgentText.slice(0, 160)}…` : item.lastAgentText;
+  // Origin may already name the agent ("Claude Code", "Codex CLI"); avoid saying it twice.
+  const agent = SOURCE_LABEL[item.source];
+  const where = item.origin.startsWith(agent.split(" ")[0]!)
+    ? item.origin
+    : `${agent} · ${item.origin}`;
   return (
-    <li className="flex flex-col gap-1">
+    <li
+      className={`group relative flex flex-col gap-0.5 ps-4 ${item.stale || item.dismissed ? "opacity-70" : ""}`}
+    >
+      {item.dismissed ? null : (
+        <span
+          aria-hidden
+          className={`absolute start-0 top-2 size-1.5 rounded-full ${item.stale ? "bg-muted-foreground/50" : "bg-warning"}`}
+        />
+      )}
       <div className="flex items-baseline gap-2">
-        {item.dismissed ? null : (
-          <span
-            aria-hidden
-            className="size-1.5 shrink-0 translate-y-[-2px] rounded-full bg-warning"
-          />
-        )}
         <span className="min-w-0 truncate font-medium">{item.title}</span>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {item.origin} · {relative(item.lastAgentAt)}
+        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+          {where} · {relative(item.lastAgentAt)}
           {item.stale ? " · stale" : ""}
         </span>
       </div>
@@ -141,7 +149,7 @@ const WaitingRow = memo(function WaitingRow({
           </>
         )}
       </p>
-      <div className="flex gap-1">
+      <div className="-ms-2 flex gap-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         <Button
           size="compact"
           variant="ghost-muted"
@@ -275,7 +283,7 @@ const TodoRow = memo(function TodoRow({
         aria-label={`Complete ${todo.text}`}
       />
       <span className="min-w-0 flex-1">{todo.text}</span>
-      <span className="shrink-0 text-xs text-muted-foreground">
+      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
         {todo.priority === 1 ? "P1 · " : ""}
         {todo.due?.split(" ")[1] ?? ""}
       </span>

@@ -3,7 +3,18 @@ import { memo, useState } from "react";
 import { Button } from "~/components/ui/button";
 
 import { personalApi, useResource, type PersonalRoutine, type PersonalRoutineAction } from "./api";
-import { Markdown, Muted, PersonalPage, absolute, relative, until } from "./PersonalPage";
+import { Markdown, Muted, PersonalPage, relative, until } from "./PersonalPage";
+
+/** "3:00 PM" today, "Sat 9:00 AM" this week, else "Nov 20". Full timestamp lives in the tooltip. */
+function shortTime(iso: string): string {
+  const date = new Date(iso);
+  const days = (date.getTime() - Date.now()) / 86_400_000;
+  if (date.toDateString() === new Date().toDateString())
+    return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  if (days < 6)
+    return date.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 function statusWord(routine: PersonalRoutine): string {
   if (!routine.enabled || routine.state === "paused") return "paused";
@@ -12,6 +23,9 @@ function statusWord(routine: PersonalRoutine): string {
     return "failed";
   return routine.lastStatus ?? routine.state;
 }
+
+const failedCount = (routines: ReadonlyArray<PersonalRoutine>) =>
+  routines.filter((routine) => statusWord(routine) === "failed").length;
 
 function byNextRun(a: PersonalRoutine, b: PersonalRoutine): number {
   if (!a.nextRunAt) return b.nextRunAt ? 1 : a.name.localeCompare(b.name);
@@ -24,7 +38,15 @@ export function RoutinesPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   return (
     <PersonalPage>
-      <h1 className="text-2xl font-semibold">Routines</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold">Routines</h1>
+        {data?.available ? (
+          <Muted>
+            Hermes cron jobs, soonest first
+            {failedCount(data.routines) ? ` · ${failedCount(data.routines)} failed` : ""}
+          </Muted>
+        ) : null}
+      </div>
       {error ? <Muted>{error}</Muted> : null}
       {data && !data.available ? (
         <Muted>Hermes cron unavailable{data.error ? `: ${data.error}` : ""}</Muted>
@@ -67,20 +89,23 @@ const RoutineRow = memo(function RoutineRow({
         onClick={() => onToggle(expanded ? null : routine.id)}
       >
         <span className="min-w-0 flex-1 truncate font-medium">{routine.name}</span>
-        <span className="shrink-0 text-xs text-muted-foreground">{routine.schedule}</span>
-        <span className="shrink-0 text-xs text-muted-foreground">
+        <span className="hidden w-32 shrink-0 truncate text-xs text-muted-foreground sm:block">
+          {routine.schedule}
+        </span>
+        <span className="w-44 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
           {routine.nextRunAt
-            ? `${until(routine.nextRunAt)} · ${absolute(routine.nextRunAt)}`
+            ? `${until(routine.nextRunAt)} · ${shortTime(routine.nextRunAt)}`
             : "not scheduled"}
         </span>
         <span
           className={
             status === "failed"
-              ? "w-16 shrink-0 text-right text-xs text-destructive-foreground"
-              : "w-16 shrink-0 text-right text-xs text-muted-foreground"
+              ? "w-20 shrink-0 text-right text-xs text-destructive-foreground"
+              : "w-20 shrink-0 text-right text-xs text-muted-foreground"
           }
         >
-          {status}
+          {/* Healthy is the default; only exceptions earn a word. */}
+          {status === "ok" || status === "scheduled" ? "" : status}
         </span>
       </button>
       {expanded ? <RoutineDetail routine={routine} onChanged={onChanged} /> : null}
